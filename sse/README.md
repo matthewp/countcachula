@@ -124,6 +124,10 @@ This matches Hono's `streamSSE` stream object.
 - **Simple API**: Clean methods for common cache operations
 - **Type safe**: Full TypeScript support
 
+## More Information
+
+Part of the [Count Cachula](https://github.com/matthewp/countcachula) project.
+
 ## License
 
 MIT

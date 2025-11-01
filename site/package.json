@@ -2,6 +2,12 @@
   "name": "@countcachula/site",
   "type": "module",
   "version": "0.0.1",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matthewp/countcachula.git",
+    "directory": "site"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

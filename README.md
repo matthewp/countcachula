@@ -237,6 +237,8 @@ The demo showcases:
 
 This is an early-stage project. Issues, ideas, and contributions are welcome!
 
+GitHub: https://github.com/matthewp/countcachula
+
 ## License
 
 MIT
