@@ -1,0 +1,65 @@
+# Stage 1: Build frontend
+FROM node:20-alpine AS builder
+
+# Install dependencies needed for native modules
+RUN apk add --no-cache python3 make g++
+
+# Set working directory
+WORKDIR /build
+
+# Copy monorepo structure (needed for workspace dependencies)
+COPY package*.json ./
+COPY core/ ./core/
+COPY sse/ ./sse/
+COPY demos/bugs/ ./demos/bugs/
+
+# Install all dependencies (including workspace packages)
+RUN npm ci
+
+# Build the frontend
+WORKDIR /build/demos/bugs
+RUN npm run build
+
+# Stage 2: Production image
+FROM node:20-alpine
+
+# Install nginx, supervisor, and build dependencies for native modules
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    python3 \
+    make \
+    g++
+
+# Create necessary directories
+RUN mkdir -p /var/log/nginx /var/log/supervisor /run/nginx
+
+# Set working directory
+WORKDIR /app
+
+# Copy monorepo structure for workspace dependencies
+COPY package*.json ./
+COPY core/ ./core/
+COPY sse/ ./sse/
+COPY demos/bugs/ ./demos/bugs/
+
+# Install production dependencies and build native modules
+RUN npm ci --production
+
+# Copy built frontend from builder stage to nginx html directory
+COPY --from=builder /build/demos/bugs/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY demos/bugs/nginx.conf /etc/nginx/nginx.conf
+
+# Copy supervisor configuration
+COPY demos/bugs/supervisord.conf /etc/supervisord.conf
+
+# Expose port 80 for nginx
+EXPOSE 80
+
+# Volume for SQLite database persistence
+VOLUME ["/app/demos/bugs"]
+
+# Start supervisord (which will start nginx and the Node.js API)
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

@@ -1,0 +1,14 @@
+{
+  "name": "@countcachula/monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "core",
+    "sse",
+    "site",
+    "demos/*"
+  ],
+  "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.1.0"
+  }
+}

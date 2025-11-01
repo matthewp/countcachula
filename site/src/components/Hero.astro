@@ -1,0 +1,53 @@
+---
+import { Code } from 'astro-expressive-code/components';
+
+const installCode = 'npm install @countcachula/core';
+---
+
+<section class="relative overflow-hidden bg-gradient-to-br from-purple-600 via-purple-700 to-violet-800 py-20 px-6">
+  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+
+  <div class="max-w-6xl mx-auto relative z-10">
+    <div class="text-center mb-12">
+      <h1 class="text-7xl md:text-8xl font-black text-white mb-4 tracking-tight transform -rotate-2">
+        <span class="inline-block bg-orange-500 px-6 py-2 rounded-2xl shadow-2xl transform rotate-1">Count</span>
+        <span class="inline-block bg-yellow-400 text-purple-900 px-6 py-2 rounded-2xl shadow-2xl transform -rotate-1 ml-2">Cachula</span>
+      </h1>
+      <p class="text-2xl md:text-3xl text-purple-100 font-bold mt-8">
+        Stale-while-revalidate caching for modern web apps! 🧛
+      </p>
+    </div>
+
+    <div class="max-w-2xl mx-auto bg-amber-50 rounded-3xl shadow-2xl p-8 transform rotate-1">
+      <p class="text-lg text-purple-900 mb-4 font-semibold">Get started:</p>
+      <Code code={installCode} lang="bash" />
+
+      <div class="mt-6 flex flex-wrap gap-4 justify-center">
+        <a href="#core-api" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+          Core API
+        </a>
+        <a href="#sse-api" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+          SSE API
+        </a>
+        <a href="https://github.com/yourusername/count-cachula" class="bg-yellow-400 hover:bg-yellow-500 text-purple-900 font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+          GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="mt-12 grid md:grid-cols-3 gap-6">
+      <div class="bg-red-500 rounded-2xl p-6 text-white shadow-xl transform -rotate-1">
+        <h3 class="text-2xl font-black mb-2">⚡ Fast</h3>
+        <p class="text-red-100">Serve cached content instantly while revalidating in the background</p>
+      </div>
+      <div class="bg-orange-500 rounded-2xl p-6 text-white shadow-xl transform rotate-1">
+        <h3 class="text-2xl font-black mb-2">🔄 Fresh</h3>
+        <p class="text-orange-100">Automatic cache invalidation keeps your data up-to-date</p>
+      </div>
+      <div class="bg-yellow-500 rounded-2xl p-6 text-purple-900 shadow-xl transform -rotate-1">
+        <h3 class="text-2xl font-black mb-2">🎯 Simple</h3>
+        <p class="text-yellow-900">Drop-in replacement for fetch with powerful caching</p>
+      </div>
+    </div>
+  </div>
+</section>

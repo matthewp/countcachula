@@ -1,0 +1,32 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import CoreDocs from '../components/CoreDocs.astro';
+import SSEDocs from '../components/SSEDocs.astro';
+---
+
+<Layout title="Count Cachula - Stale-while-revalidate caching">
+  <main>
+    <Hero />
+    <CoreDocs />
+    <SSEDocs />
+
+    <!-- Footer -->
+    <footer class="bg-purple-900 text-purple-100 py-12 px-6">
+      <div class="max-w-5xl mx-auto text-center">
+        <p class="text-xl font-bold mb-4">Count Cachula 🧛</p>
+        <p class="mb-6">Stale-while-revalidate caching for modern web apps</p>
+        <div class="flex justify-center gap-6">
+          <a href="https://github.com/yourusername/count-cachula" class="hover:text-orange-400 transition">GitHub</a>
+          <a href="https://npmjs.com/package/@countcachula/core" class="hover:text-orange-400 transition">npm</a>
+        </div>
+      </div>
+    </footer>
+  </main>
+</Layout>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+</style>

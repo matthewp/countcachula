@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Custom styles for Count Cachula theme */
+:root {
+  --color-purple: #8b5cf6;
+  --color-purple-dark: #6d28d9;
+  --color-orange: #f97316;
+  --color-yellow: #fbbf24;
+  --color-red: #ef4444;
+  --color-cream: #fef3c7;
+  --color-chocolate: #422006;
+}
