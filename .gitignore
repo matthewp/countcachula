@@ -1,2 +1,4 @@
 node_modules
 demos/bugs/bugs.db
+dist
+*.tsbuildinfo

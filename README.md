@@ -241,4 +241,4 @@ GitHub: https://github.com/matthewp/countcachula
 
 ## License
 
-MIT
+BSD-3-Clause

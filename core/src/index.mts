@@ -1,4 +1,4 @@
-import { getLastSync, updateLastSync } from './metadata.js';
+import { getLastSync, updateLastSync } from './metadata.mjs';
 
 const CACHE_NAME = 'countcachula-v1';
 

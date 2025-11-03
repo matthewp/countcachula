@@ -130,4 +130,4 @@ Part of the [Count Cachula](https://github.com/matthewp/countcachula) project.
 
 ## License
 
-MIT
+BSD-3-Clause

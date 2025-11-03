@@ -2,6 +2,7 @@
   "name": "@countcachula/monorepo",
   "version": "0.0.1",
   "private": true,
+  "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
     "url": "https://github.com/matthewp/countcachula.git"
@@ -13,6 +14,7 @@
     "demos/*"
   ],
   "devDependencies": {
-    "@vitejs/plugin-basic-ssl": "^2.1.0"
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
+    "typescript": "^5.9.3"
   }
 }

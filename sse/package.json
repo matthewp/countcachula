@@ -1,11 +1,33 @@
 {
   "name": "@countcachula/sse",
   "version": "0.0.1",
+  "description": "Server-Sent Events (SSE) support for Count Cachula cache invalidation and preload hints",
+  "keywords": [
+    "sse",
+    "server-sent-events",
+    "cache",
+    "invalidation",
+    "cache-hub",
+    "real-time",
+    "hono"
+  ],
+  "author": "Matthew Phillips <matthew@matthewphillips.info>",
   "type": "module",
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
     "url": "https://github.com/matthewp/countcachula.git",
@@ -14,5 +36,8 @@
   "homepage": "https://github.com/matthewp/countcachula#readme",
   "bugs": {
     "url": "https://github.com/matthewp/countcachula/issues"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

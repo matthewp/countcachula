@@ -15,7 +15,10 @@ See [README.md](./README.md) for complete project documentation including:
 cache-first/
 ├── core/                    # Main library package
 │   └── src/
-│       └── index.ts        # Core implementation (fetch, CacheObservable)
+│       └── index.mts       # Core implementation (fetch, CacheObservable)
+├── sse/                     # SSE package for cache invalidation
+│   └── src/
+│       └── index.mts       # SSE CacheHub implementation
 ├── demos/
 │   └── bugs/               # Bug tracker demo application
 │       ├── api/            # Mock API server
@@ -48,7 +51,8 @@ Custom observable implementation that:
 
 ## Important Files
 
-- **core/src/index.ts**: Main library code - `fetch()` and `CacheObservable` implementation
+- **core/src/index.mts**: Main library code - `fetch()` and `CacheObservable` implementation
+- **sse/src/index.mts**: SSE CacheHub for real-time cache invalidation
 - **demos/bugs/src/App.tsx**: Example usage with React/Preact
 - **design/project.md**: Detailed design decisions and rationale
 
@@ -65,10 +69,27 @@ npm run api
 cd demos/bugs && npm run dev
 ```
 
+## Coding Conventions
+
+### TypeScript File Extensions
+- **Published packages** (`core/` and `sse/`): Use `.mts` extension for TypeScript files
+  - This ensures TypeScript outputs explicit `.mjs` files (ESM modules)
+  - Example: `core/src/index.mts`, `sse/src/index.mts`
+- **Demo apps and internal code**: Use standard `.ts` or `.tsx` extensions
+
+### Building Packages
+```bash
+# Build core package
+cd core && npm run build
+
+# Build SSE package
+cd sse && npm run build
+```
+
 ## Common Tasks
 
 ### Adding New Features
-- Core library code is in `core/src/index.ts`
+- Core library code is in `core/src/index.mts`
 - Test features using the bug tracker demo in `demos/bugs/`
 
 ### Testing Changes
@@ -77,7 +98,7 @@ cd demos/bugs && npm run dev
 - Open browser to see real-time updates from cache
 
 ### Understanding the Flow
-1. Start with `core/src/index.ts` to see the fetch implementation
+1. Start with `core/src/index.mts` to see the fetch implementation
 2. Look at `demos/bugs/src/App.tsx` for integration patterns
 3. Check `design/project.md` for architectural decisions
 

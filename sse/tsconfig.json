@@ -3,7 +3,7 @@
     // Language and module settings
     "target": "ES2022",
     "module": "NodeNext",
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ES2022"],
     "moduleResolution": "NodeNext",
 
     // Emit settings

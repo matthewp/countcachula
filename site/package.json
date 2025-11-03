@@ -3,6 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "private": true,
+  "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
     "url": "https://github.com/matthewp/countcachula.git",
