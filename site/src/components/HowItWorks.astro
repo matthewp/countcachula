@@ -1,0 +1,144 @@
+---
+import { Code } from 'astro-expressive-code/components';
+
+const preloadHintCode = `event: preload-hint
+data: {"url": "/api/tasks", "tags": ["tasks"]}
+
+event: preload-hint
+data: {"url": "/api/user/profile", "tags": ["user"]}`;
+
+const invalidationCode = `event: invalidate
+data: {"tags": ["tasks", "task:123"]}`;
+
+const fetchCode = `// When your code needs data
+const tasks = await CountCachula.fetch('/api/tasks');
+
+// Returns cached data instantly (if available)
+// Then fetches fresh data in background
+// UI updates automatically when fresh data arrives`;
+
+const mutationCode = `// After a mutation on the server
+await db.tasks.create(newTask);
+
+// Invalidate related cache tags
+hub.invalidate(['tasks', 'user:stats']);
+// SSE automatically notifies all connected clients`;
+---
+
+<section class="py-20 px-6 bg-gradient-to-br from-purple-50 to-white">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl md:text-5xl font-black text-purple-900 mb-6">
+        How It Works
+      </h2>
+      <p class="text-xl text-purple-700 max-w-4xl mx-auto">
+        Count Cachula uses server-driven invalidation and preloading to keep your client perfectly in sync—without any client-side complexity.
+      </p>
+    </div>
+
+    <div class="space-y-12">
+      <!-- Step 1: Connection -->
+      <div class="bg-white rounded-2xl shadow-lg p-8 border-l-8 border-purple-500">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="bg-purple-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">1</div>
+          <h3 class="text-2xl font-bold text-purple-900">Browser Connects to SSE</h3>
+        </div>
+        <p class="text-gray-700 mb-4 ml-16">
+          When your app loads, it establishes a Server-Sent Events connection. This gives the server a direct channel to push updates to the client.
+        </p>
+      </div>
+
+      <!-- Step 2: Preloading -->
+      <div class="bg-white rounded-2xl shadow-lg p-8 border-l-8 border-orange-500">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="bg-orange-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">2</div>
+          <h3 class="text-2xl font-bold text-purple-900">Server Sends Preload Hints</h3>
+        </div>
+        <p class="text-gray-700 mb-4 ml-16">
+          The server can immediately start warming up the cache by sending preload hints for important APIs:
+        </p>
+        <div class="ml-16">
+          <Code code={preloadHintCode} lang="text" />
+        </div>
+        <p class="text-gray-600 text-sm mt-4 ml-16 italic">
+          The client fetches and caches this data in the background, so it's ready instantly when needed.
+        </p>
+      </div>
+
+      <!-- Step 3: Fetching Data -->
+      <div class="bg-white rounded-2xl shadow-lg p-8 border-l-8 border-green-500">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="bg-green-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">3</div>
+          <h3 class="text-2xl font-bold text-purple-900">Code Requests Data</h3>
+        </div>
+        <p class="text-gray-700 mb-4 ml-16">
+          When your code needs data, it makes a normal request using Count Cachula's fetch:
+        </p>
+        <div class="ml-16">
+          <Code code={fetchCode} lang="javascript" />
+        </div>
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded ml-16 mt-4">
+          <p class="text-green-900">
+            <strong>The magic:</strong> Returns cached data instantly, then fetches fresh data in the background and automatically updates your UI when it arrives. No loading states needed!
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 4: Mutations & Invalidation -->
+      <div class="bg-white rounded-2xl shadow-lg p-8 border-l-8 border-yellow-500">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="bg-yellow-500 text-purple-900 rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">4</div>
+          <h3 class="text-2xl font-bold text-purple-900">Mutations Invalidate Tags</h3>
+        </div>
+        <p class="text-gray-700 mb-4 ml-16">
+          When you mutate data on the server, you invalidate related cache tags:
+        </p>
+        <div class="ml-16">
+          <Code code={mutationCode} lang="javascript" />
+        </div>
+        <p class="text-gray-700 mt-4 mb-4 ml-16">
+          The server pushes invalidation events via SSE to all connected clients:
+        </p>
+        <div class="ml-16">
+          <Code code={invalidationCode} lang="text" />
+        </div>
+      </div>
+
+      <!-- Step 5: Real-time Updates -->
+      <div class="bg-white rounded-2xl shadow-lg p-8 border-l-8 border-red-500">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="bg-red-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-black">5</div>
+          <h3 class="text-2xl font-bold text-purple-900">Client Updates Automatically</h3>
+        </div>
+        <p class="text-gray-700 mb-4 ml-16">
+          When the client receives invalidation events, it automatically refetches any affected Observables and updates your UI.
+        </p>
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded ml-16">
+          <p class="text-red-900 font-bold text-lg mb-2">
+            🎯 This gives you REAL-TIME updates!
+          </p>
+          <p class="text-red-900">
+            All users see changes instantly, even on pages they're not currently viewing. The cache stays warm and ready.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Benefits -->
+    <div class="mt-16 grid md:grid-cols-2 gap-8">
+      <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-xl p-8 text-white">
+        <h3 class="text-2xl font-black mb-4">🔄 Server-Driven Everything</h3>
+        <p class="text-purple-100 leading-relaxed">
+          The server controls invalidation and preloading, which means the client is <strong>never stale</strong>. Every fetch gets fresh data in the background, and SSE pushes immediate updates when things change.
+        </p>
+      </div>
+
+      <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-xl p-8 text-white">
+        <h3 class="text-2xl font-black mb-4">📈 Progressive Enhancement</h3>
+        <p class="text-orange-100 leading-relaxed">
+          Start simple with just <code class="bg-orange-700 px-2 py-1 rounded">CountCachula.fetch()</code> for automatic stale-while-revalidate. Add SSE for real-time updates. Add cache tags for smart invalidation. Add preloading for instant navigation. Build up complexity only when you need it.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

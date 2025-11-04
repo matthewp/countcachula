@@ -1,0 +1,99 @@
+---
+---
+
+<section class="py-20 px-6 bg-gradient-to-br from-slate-50 to-purple-50">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl md:text-5xl font-black text-purple-900 mb-6">
+        What is Count Cachula?
+      </h2>
+      <p class="text-xl md:text-2xl text-purple-700 max-w-4xl mx-auto leading-relaxed">
+        An alternative to local-first that gives you the same instant, responsive UX—but simpler, lighter, and easier to reason about.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-12 mb-16">
+      <div class="flex flex-col">
+        <h3 class="text-2xl font-bold text-purple-900 mb-6">The Local-First Promise</h3>
+        <p class="text-lg text-gray-700 leading-relaxed mb-6 flex-grow">
+          Local-first architectures provide instant UI updates by keeping a local copy of your data. But they come with serious complexity: CRDTs, conflict resolution, sync protocols, offline queues, and complex state management.
+        </p>
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+          <p class="text-red-900 font-semibold">The problem: You're building distributed systems whether you want to or not.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <h3 class="text-2xl font-bold text-purple-900 mb-6">The Count Cachula Way</h3>
+        <p class="text-lg text-gray-700 leading-relaxed mb-6 flex-grow">
+          Get the same instant responsiveness by treating your cache as truth. Stale-while-revalidate means users see data immediately, then get updates automatically. No sync, no conflicts, no distributed systems.
+        </p>
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+          <p class="text-green-900 font-semibold">The solution: Your server is still the source of truth. The cache just makes it feel instant.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-2xl p-10 mb-12">
+      <h3 class="text-3xl font-black text-purple-900 mb-8 text-center">
+        Stale-While-Revalidate on Steroids
+      </h3>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="text-center">
+          <div class="text-5xl mb-4">⚡</div>
+          <h4 class="text-xl font-bold text-purple-900 mb-2">Instant Response</h4>
+          <p class="text-gray-600">Serve from cache immediately while fetching fresh data in the background</p>
+        </div>
+        <div class="text-center">
+          <div class="text-5xl mb-4">🏷️</div>
+          <h4 class="text-xl font-bold text-purple-900 mb-2">Cache Tags</h4>
+          <p class="text-gray-600">Tag related data and invalidate entire groups at once</p>
+        </div>
+        <div class="text-center">
+          <div class="text-5xl mb-4">🔄</div>
+          <h4 class="text-xl font-bold text-purple-900 mb-2">Smart Invalidation</h4>
+          <p class="text-gray-600">Automatically invalidate caches when mutations happen via SSE</p>
+        </div>
+        <div class="text-center">
+          <div class="text-5xl mb-4">🚀</div>
+          <h4 class="text-xl font-bold text-purple-900 mb-2">Preloading</h4>
+          <p class="text-gray-600">Warm up caches before users need them for zero-latency navigation</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-gradient-to-r from-purple-600 to-violet-600 rounded-3xl shadow-2xl p-10 text-white">
+      <h3 class="text-3xl font-black mb-6 text-center">Why This Works</h3>
+      <div class="space-y-4 max-w-3xl mx-auto">
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">✓</div>
+          <div>
+            <p class="font-bold mb-1">Users see data instantly</p>
+            <p class="text-purple-100">Cached data appears immediately, no loading spinners</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">✓</div>
+          <div>
+            <p class="font-bold mb-1">Data stays fresh automatically</p>
+            <p class="text-purple-100">Background revalidation and SSE invalidation keep everything current</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">✓</div>
+          <div>
+            <p class="font-bold mb-1">Server remains source of truth</p>
+            <p class="text-purple-100">No conflict resolution, no CRDTs, no distributed systems complexity</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">✓</div>
+          <div>
+            <p class="font-bold mb-1">Drop-in replacement for fetch</p>
+            <p class="text-purple-100">Works with your existing API, no architecture overhaul needed</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
