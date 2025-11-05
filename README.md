@@ -182,6 +182,10 @@ const updateUser = async (userId, updates) => {
 
 Check out the bug tracker demo to see Count Cachula in action:
 
+🚀 **[View Live Demo](https://bugs.countcachula.spooky.click/)** - A working bug tracker showcasing Count Cachula's capabilities.
+
+Or run it locally:
+
 ```bash
 # Install dependencies
 npm install

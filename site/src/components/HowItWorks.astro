@@ -11,7 +11,8 @@ const invalidationCode = `event: invalidate
 data: {"tags": ["tasks", "task:123"]}`;
 
 const fetchCode = `// When your code needs data
-const tasks = await CountCachula.fetch('/api/tasks');
+const request = new Request('/api/tasks');
+const tasks = await CountCachula.fetch(request);
 
 // Returns cached data instantly (if available)
 // Then fetches fresh data in background
