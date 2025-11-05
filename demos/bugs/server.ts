@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server';
-import api from './api/index';
+import api from './api/index.ts';
 
 const port = 3001;
 

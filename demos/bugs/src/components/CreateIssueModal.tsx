@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Priority } from '../types';
+import { useAuth } from './AuthContext';
 
 interface CreateIssueModalProps {
   onClose: () => void;
@@ -7,6 +8,7 @@ interface CreateIssueModalProps {
 }
 
 export function CreateIssueModal({ onClose, onSubmit }: CreateIssueModalProps) {
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
@@ -40,6 +42,22 @@ export function CreateIssueModal({ onClose, onSubmit }: CreateIssueModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} class="space-y-4">
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
+            {user?.avatar_url && (
+              <img
+                src={user.avatar_url}
+                alt={user.username}
+                class="w-8 h-8 rounded-full"
+              />
+            )}
+            <div>
+              <p class="text-sm font-medium text-gray-900">
+                {user?.name || user?.username}
+              </p>
+              <p class="text-xs text-gray-500">Creating as @{user?.username}</p>
+            </div>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Title *

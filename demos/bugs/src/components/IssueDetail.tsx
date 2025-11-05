@@ -9,7 +9,7 @@ interface IssueDetailProps {
   allLabels: Label[];
   onBack: () => void;
   onStatusChange: (status: IssueStatus) => void;
-  onAddComment: (author: string, content: string) => Promise<void>;
+  onAddComment: (content: string) => Promise<void>;
   onAddLabel: (labelId: number) => void;
   onRemoveLabel: (labelId: number) => void;
 }
@@ -48,6 +48,19 @@ export function IssueDetail({
             <h1 class="text-2xl font-bold text-gray-900 mb-2">
               #{issue.id} {issue.title}
             </h1>
+            <div class="flex items-center gap-3 mb-2">
+              {issue.author?.avatar_url && (
+                <img
+                  src={issue.author.avatar_url}
+                  alt={issue.author.username}
+                  class="w-6 h-6 rounded-full"
+                />
+              )}
+              <span class="text-sm font-medium text-gray-700">
+                {issue.author?.name || issue.author?.username}
+              </span>
+              <span class="text-sm text-gray-500">@{issue.author?.username}</span>
+            </div>
             <div class="flex gap-2 text-sm text-gray-500">
               <span>Created {createdDate}</span>
               <span>•</span>
@@ -124,8 +137,19 @@ export function IssueDetail({
           <div class="space-y-4 mb-6">
             {issue.comments.map((comment) => (
               <div key={comment.id} class="border-l-4 border-blue-500 pl-4 py-2">
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="font-medium text-gray-900">{comment.author}</span>
+                <div class="flex items-center gap-2 mb-2">
+                  {comment.author?.avatar_url && (
+                    <img
+                      src={comment.author.avatar_url}
+                      alt={comment.author.username}
+                      class="w-5 h-5 rounded-full"
+                    />
+                  )}
+                  <span class="font-medium text-gray-900">
+                    {comment.author?.name || comment.author?.username}
+                  </span>
+                  <span class="text-xs text-gray-500">@{comment.author?.username}</span>
+                  <span class="text-xs text-gray-400">•</span>
                   <span class="text-xs text-gray-500">
                     {new Date(comment.created_at).toLocaleString()}
                   </span>

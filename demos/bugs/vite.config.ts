@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [preact(), tailwindcss(), basicSsl()],
   server: {
     host: '0.0.0.0',
-    port: 8201,
+    port: 8101,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

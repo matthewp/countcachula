@@ -30,7 +30,20 @@ export function IssueCard({ issue, onClick }: IssueCardProps) {
             <LabelBadge key={label.id} label={label} />
           ))}
         </div>
-        <span class="text-xs text-gray-500">{createdDate}</span>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2">
+            {issue.author?.avatar_url && (
+              <img
+                src={issue.author.avatar_url}
+                alt={issue.author.username}
+                class="w-5 h-5 rounded-full"
+              />
+            )}
+            <span class="text-xs text-gray-500">@{issue.author?.username}</span>
+          </div>
+          <span class="text-xs text-gray-400">•</span>
+          <span class="text-xs text-gray-500">{createdDate}</span>
+        </div>
       </div>
     </div>
   );

@@ -3,11 +3,15 @@ import { Issue, IssueStatus, Label, Priority } from './types';
 import { IssueList } from './components/IssueList';
 import { IssueDetail } from './components/IssueDetail';
 import { CreateIssueModal } from './components/CreateIssueModal';
+import { AuthProvider, useAuth } from './components/AuthContext';
+import { LoginButton } from './components/LoginButton';
+import { createAuthenticatedRequest } from './utils/api';
 import * as CountCachula from '@countcachula/core';
 
 type View = 'list' | 'detail';
 
-export function App() {
+function AppContent() {
+  const { user, token, loading: authLoading } = useAuth();
   const [view, setView] = useState<View>('list');
   const [issues, setIssues] = useState<Issue[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
@@ -47,7 +51,7 @@ export function App() {
       ? '/api/issues'
       : `/api/issues?status=${statusFilter}`;
 
-    const request = new Request(url);
+    const request = createAuthenticatedRequest(url, token);
     const observable = CountCachula.fetch(request);
 
     observable.observe(async (response) => {
@@ -58,7 +62,7 @@ export function App() {
   };
 
   const loadLabels = async () => {
-    const request = new Request('/api/labels');
+    const request = createAuthenticatedRequest('/api/labels', token);
     const observable = CountCachula.fetch(request);
 
     observable.observe(async (response) => {
@@ -68,7 +72,7 @@ export function App() {
   };
 
   const loadIssueDetail = async (issueId: number) => {
-    const request = new Request(`/api/issues/${issueId}`);
+    const request = createAuthenticatedRequest(`/api/issues/${issueId}`, token);
     const observable = CountCachula.fetch(request);
 
     observable.observe(async (response) => {
@@ -89,6 +93,8 @@ export function App() {
   };
 
   const handleCreateIssue = async (title: string, description: string, priority: Priority) => {
+    if (!user || !token) return;
+
     // Optimistic update: add temporary issue to list
     const optimisticIssue: Issue = {
       id: Date.now(), // Temporary ID
@@ -96,16 +102,21 @@ export function App() {
       description,
       status: 'open',
       priority,
+      author_id: user.id,
+      author: user,
       labels: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     setIssues((prev) => [optimisticIssue, ...prev]);
 
-    // Mutation with regular fetch
+    // Mutation with authenticated fetch
     await fetch('/api/issues', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({ title, description, priority }),
     });
 
@@ -113,29 +124,33 @@ export function App() {
   };
 
   const handleStatusChange = async (status: IssueStatus) => {
-    if (!selectedIssue) return;
+    if (!selectedIssue || !token) return;
 
     // Optimistic update: update issue status immediately
     setSelectedIssue({ ...selectedIssue, status });
 
-    // Mutation with regular fetch
+    // Mutation with authenticated fetch
     await fetch(`/api/issues/${selectedIssue.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({ status }),
     });
 
     // SSE invalidation will refetch and sync with server truth
   };
 
-  const handleAddComment = async (author: string, content: string) => {
-    if (!selectedIssue) return;
+  const handleAddComment = async (content: string) => {
+    if (!selectedIssue || !user || !token) return;
 
     // Optimistic update: add comment to issue immediately
     const optimisticComment = {
       id: Date.now(), // Temporary ID
       issue_id: selectedIssue.id,
-      author,
+      author_id: user.id,
+      author: user,
       content,
       created_at: new Date().toISOString(),
     };
@@ -144,18 +159,21 @@ export function App() {
       comments: [...(selectedIssue.comments || []), optimisticComment],
     });
 
-    // Mutation with regular fetch
+    // Mutation with authenticated fetch
     await fetch(`/api/issues/${selectedIssue.id}/comments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author, content }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content }),
     });
 
     // SSE invalidation will refetch and sync with server truth
   };
 
   const handleAddLabel = async (labelId: number) => {
-    if (!selectedIssue) return;
+    if (!selectedIssue || !token) return;
 
     // Optimistic update: add label to issue immediately
     const labelToAdd = labels.find((l) => l.id === labelId);
@@ -166,16 +184,19 @@ export function App() {
       });
     }
 
-    // Mutation with regular fetch
+    // Mutation with authenticated fetch
     await fetch(`/api/issues/${selectedIssue.id}/labels/${labelId}`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
 
     // SSE invalidation will refetch and sync with server truth
   };
 
   const handleRemoveLabel = async (labelId: number) => {
-    if (!selectedIssue) return;
+    if (!selectedIssue || !token) return;
 
     // Optimistic update: remove label from issue immediately
     setSelectedIssue({
@@ -183,18 +204,32 @@ export function App() {
       labels: selectedIssue.labels.filter((l) => l.id !== labelId),
     });
 
-    // Mutation with regular fetch
+    // Mutation with authenticated fetch
     await fetch(`/api/issues/${selectedIssue.id}/labels/${labelId}`, {
       method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
 
     // SSE invalidation will refetch and sync with server truth
   };
 
+  if (authLoading) {
+    return (
+      <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p class="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div class="min-h-screen bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">Bug Tracker</h1>
+        <div class="flex items-center justify-between mb-8">
+          <h1 class="text-3xl font-bold text-gray-900">Bug Tracker</h1>
+          <LoginButton />
+        </div>
 
         {loading && view === 'list' ? (
           <div class="text-center py-12">
@@ -207,6 +242,7 @@ export function App() {
             onCreateClick={() => setShowCreateModal(true)}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
+            canCreateIssues={!!user}
           />
         ) : selectedIssue ? (
           <IssueDetail
@@ -220,7 +256,7 @@ export function App() {
           />
         ) : null}
 
-        {showCreateModal && (
+        {showCreateModal && user && (
           <CreateIssueModal
             onClose={() => setShowCreateModal(false)}
             onSubmit={handleCreateIssue}
@@ -228,5 +264,13 @@ export function App() {
         )}
       </div>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

@@ -12,10 +12,10 @@
   "scripts": {
     "dev": "concurrently \"npm run api\" \"npm run dev:frontend\"",
     "dev:frontend": "vite",
-    "api": "tsx server.ts",
+    "api": "node --experimental-strip-types --env-file=.env server.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server.ts"
+    "start": "node --experimental-strip-types server.ts"
   },
   "dependencies": {
     "@countcachula/core": "*",
@@ -25,14 +25,15 @@
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.4.1",
     "hono": "^4.10.4",
+    "jsonwebtoken": "^9.0.2",
     "preact": "^10.27.2",
     "tailwindcss": "^4.1.16",
     "vite": "^7.1.12"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^24.9.2",
     "concurrently": "^9.2.1",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

@@ -7,6 +7,7 @@ interface IssueListProps {
   onCreateClick: () => void;
   statusFilter: IssueStatus | 'all';
   onStatusFilterChange: (status: IssueStatus | 'all') => void;
+  canCreateIssues: boolean;
 }
 
 export function IssueList({
@@ -15,6 +16,7 @@ export function IssueList({
   onCreateClick,
   statusFilter,
   onStatusFilterChange,
+  canCreateIssues,
 }: IssueListProps) {
   return (
     <div>
@@ -61,12 +63,18 @@ export function IssueList({
             Closed
           </button>
         </div>
-        <button
-          onClick={onCreateClick}
-          class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
-        >
-          + New Issue
-        </button>
+        {canCreateIssues ? (
+          <button
+            onClick={onCreateClick}
+            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+          >
+            + New Issue
+          </button>
+        ) : (
+          <div class="text-sm text-gray-500">
+            Login to create issues
+          </div>
+        )}
       </div>
 
       {issues.length === 0 ? (

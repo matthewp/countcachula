@@ -3,3 +3,4 @@ demos/bugs/bugs.db
 dist
 *.tsbuildinfo
 demos/bugs/dist
+demos/bugs/.env
