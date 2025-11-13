@@ -10,8 +10,10 @@
   "workspaces": [
     "core",
     "sse",
+    "react",
     "site",
-    "demos/*"
+    "demos/*",
+    "react/demo"
   ],
   "devDependencies": {
     "@vitejs/plugin-basic-ssl": "^2.1.0",
