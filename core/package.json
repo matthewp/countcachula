@@ -16,6 +16,7 @@
   "type": "module",
   "exports": {
     ".": {
+      "development": "./src/index.mts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     }
