@@ -141,51 +141,6 @@ function ImageViewer() {
   return <img src={imageBlob} alt="Chart" />;
 }`;
 
-const basicErrorBoundaryCode = `import { ErrorBoundary } from 'react-error-boundary';
-
-function ErrorFallback({ error, resetErrorBoundary }) {
-  return (
-    <div className="error-container">
-      <h2>Something went wrong</h2>
-      <p>{error.message}</p>
-      <button onClick={resetErrorBoundary}>Try again</button>
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <ErrorBoundary
-      FallbackComponent={ErrorFallback}
-      onReset={() => window.location.reload()}
-    >
-      <Suspense fallback={<LoadingSpinner />}>
-        <DataComponent />
-      </Suspense>
-    </ErrorBoundary>
-  );
-}`;
-
-const granularErrorHandlingCode = `function UserDashboard() {
-  return (
-    <div>
-      <h1>Dashboard</h1>
-
-      <ErrorBoundary fallback={<div>Failed to load profile</div>}>
-        <Suspense fallback={<ProfileSkeleton />}>
-          <UserProfile />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<div>Failed to load notifications</div>}>
-        <Suspense fallback={<NotificationsSkeleton />}>
-          <Notifications />
-        </Suspense>
-      </ErrorBoundary>
-    </div>
-  );
-}`;
-
 const bearerTokenAuthCode = `function useAuthenticatedFetch<T>(url: string) {
   const token = useAuthToken(); // Your auth hook
 
@@ -202,29 +157,6 @@ function ProtectedData() {
 
   return <div>Welcome, {userData.name}!</div>;
 }`;
-
-const contextAuthCode = `const AuthContext = createContext<{ token: string | null }>({ token: null });
-
-function AuthenticatedFetch<T>({ url, children }: { url: string; children: (data: T) => ReactNode }) {
-  const { token } = useContext(AuthContext);
-
-  const data = useFetch<T>(url, {
-    headers: token ? {
-      Authorization: \`Bearer \${token}\`,
-    } : undefined,
-  });
-
-  return <>{children(data)}</>;
-}
-
-// Usage
-<AuthenticatedFetch<User[]> url="/api/users">
-  {users => (
-    <ul>
-      {users.map(user => <li key={user.id}>{user.name}</li>)}
-    </ul>
-  )}
-</AuthenticatedFetch>`;
 
 const appLevelConnectionCode = `function App() {
   // Establish connection at app root
@@ -430,229 +362,8 @@ function IssueDetail() {
   );
 }`;
 
-const optimisticUpdatesCode = `function CreateIssueForm({ onSuccess }: { onSuccess: () => void }) {
-  const [title, setTitle] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
 
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/issues', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
-
-      if (response.ok) {
-        setTitle('');
-        onSuccess();
-
-        // Note: SSE connection will automatically invalidate
-        // the issues list cache, causing components to re-render
-        // with the new issue included
-      } else {
-        throw new Error('Failed to create issue');
-      }
-    } catch (error) {
-      console.error('Error creating issue:', error);
-      // Handle error (show notification, etc.)
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Issue title"
-        disabled={isSubmitting}
-      />
-      <button type="submit" disabled={isSubmitting || !title.trim()}>
-        {isSubmitting ? 'Creating...' : 'Create Issue'}
-      </button>
-    </form>
-  );
-}
-
-// Usage in parent component
-function IssuesPage() {
-  const [showForm, setShowForm] = useState(false);
-
-  return (
-    <div>
-      <div className="header">
-        <h1>Issues</h1>
-        <button onClick={() => setShowForm(true)}>New Issue</button>
-      </div>
-
-      {showForm && (
-        <CreateIssueForm onSuccess={() => setShowForm(false)} />
-      )}
-
-      <Suspense fallback={<div>Loading issues...</div>}>
-        <IssueList />
-      </Suspense>
-    </div>
-  );
-}`;
-
-const memoComponentCode = `import { memo } from 'react';
-
-const IssueCard = memo(function IssueCard({ issue }: { issue: Issue }) {
-  return (
-    <div className="issue-card">
-      <h3>{issue.title}</h3>
-      <p>{issue.description}</p>
-      <div className="labels">
-        {issue.labels.map(label => (
-          <span key={label}>{label}</span>
-        ))}
-      </div>
-    </div>
-  );
-});
-
-function IssueList() {
-  const issues = useFetch<Issue[]>('/api/issues');
-
-  return (
-    <div>
-      {issues.map(issue => (
-        <IssueCard key={issue.id} issue={issue} />
-      ))}
-    </div>
-  );
-}`;
-
-const nestedSuspenseCode = `function Dashboard() {
-  return (
-    <div className="dashboard">
-      {/* Critical data loads first */}
-      <Suspense fallback={<div>Loading user info...</div>}>
-        <UserInfo />
-      </Suspense>
-
-      <div className="dashboard-grid">
-        {/* Each section loads independently */}
-        <Suspense fallback={<ChartSkeleton />}>
-          <StatsChart />
-        </Suspense>
-
-        <Suspense fallback={<ListSkeleton />}>
-          <RecentActivity />
-        </Suspense>
-
-        <Suspense fallback={<NotificationSkeleton />}>
-          <Notifications />
-        </Suspense>
-      </div>
-    </div>
-  );
-}`;
-
-const conditionalDataLoadingCode = `function UserProfile({ userId }: { userId: string }) {
-  const user = useFetch<User>(\`/api/users/\${userId}\`);
-
-  return (
-    <div>
-      <h1>{user.name}</h1>
-      <p>{user.email}</p>
-
-      {user.isAdmin && (
-        <Suspense fallback={<div>Loading admin data...</div>}>
-          <AdminPanel userId={userId} />
-        </Suspense>
-      )}
-
-      {user.hasNotifications && (
-        <Suspense fallback={<div>Loading notifications...</div>}>
-          <NotificationsList userId={userId} />
-        </Suspense>
-      )}
-    </div>
-  );
-}`;
-
-// Migration code snippets
-const beforeObservableCode = `const [issues, setIssues] = useState<Issue[]>([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState<Error | null>(null);
-
-useEffect(() => {
-  const request = new Request('/api/issues');
-  const observable = CountCachula.fetch(request);
-
-  const unsubscribe = observable.observe(async (response) => {
-    try {
-      const data = await response.json();
-      setIssues(data);
-      setLoading(false);
-    } catch (err) {
-      setError(err);
-      setLoading(false);
-    }
-  });
-
-  return unsubscribe;
-}, []);
-
-if (loading) return <Spinner />;
-if (error) return <ErrorMessage error={error} />;
-
-return <IssueList issues={issues} />;`;
-
-const afterHooksCode = `const issues = useFetch<Issue[]>('/api/issues');
-
-return <IssueList issues={issues} />;`;
-
-const beforeUseEffectCode = `const [user, setUser] = useState<User | null>(null);
-const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  async function fetchUser() {
-    try {
-      const response = await fetch('/api/user');
-      const userData = await response.json();
-      setUser(userData);
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  fetchUser();
-}, []);
-
-if (loading) return <div>Loading...</div>;
-if (!user) return <div>No user found</div>;
-
-return <div>Hello, {user.name}!</div>;`;
-
-const afterUseFetchCode = `const user = useFetch<User>('/api/user');
-
-return <div>Hello, {user.name}!</div>;`;
-
-const reactQueryCode = `const { data: user, isLoading, error } = useQuery({
-  queryKey: ['user', userId],
-  queryFn: () => fetch(\`/api/users/\${userId}\`).then(r => r.json()),
-});
-
-if (isLoading) return <div>Loading...</div>;
-if (error) return <div>Error: {error.message}</div>;
-
-return <div>Hello, {user.name}!</div>;`;
-
-const countCachulaCode = `const user = useFetch<User>(\`/api/users/\${userId}\`);
-
-return <div>Hello, {user.name}!</div>;`;
 ---
 
 <Layout title="React Hooks - Count Cachula">
@@ -873,22 +584,6 @@ return <div>Hello, {user.name}!</div>;`;
             </div>
           </div>
 
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">Error Boundaries</h3>
-            <p class="text-gray-700 mb-4">Handle errors gracefully with React Error Boundaries:</p>
-
-            <div class="space-y-6">
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Basic Error Boundary</h4>
-                <Code code={basicErrorBoundaryCode} lang="tsx"  />
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Granular Error Handling</h4>
-                <Code code={granularErrorHandlingCode} lang="tsx"  />
-              </div>
-            </div>
-          </div>
 
           <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-2xl font-bold text-purple-800 mb-4">Authentication Patterns</h3>
@@ -899,10 +594,6 @@ return <div>Hello, {user.name}!</div>;`;
                 <Code code={bearerTokenAuthCode} lang="tsx"  />
               </div>
 
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Context-Based Auth</h4>
-                <Code code={contextAuthCode} lang="tsx"  />
-              </div>
             </div>
           </div>
 
@@ -944,155 +635,10 @@ return <div>Hello, {user.name}!</div>;`;
             <Code code={masterDetailCode} lang="tsx"  />
           </div>
 
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">Form with Optimistic Updates</h3>
-            <Code code={optimisticUpdatesCode} lang="tsx"  />
-          </div>
 
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">Performance Tips</h3>
-
-            <div class="space-y-6">
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Memo for Expensive Renders</h4>
-                <Code code={memoComponentCode} lang="tsx"  />
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Nested Suspense Boundaries</h4>
-                <Code code={nestedSuspenseCode} lang="tsx"  />
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Conditional Data Loading</h4>
-                <Code code={conditionalDataLoadingCode} lang="tsx"  />
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      <!-- Migration Guide -->
-      <section id="migration" class="mb-16">
-        <h2 class="text-3xl font-bold text-purple-900 mb-8">Migration Guide</h2>
-
-        <div class="space-y-8">
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">From Observable Pattern</h3>
-
-            <div class="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Before (using observables directly)</h4>
-                <Code code={beforeObservableCode} lang="tsx"  />
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">After (using React hooks)</h4>
-                <Code code={afterHooksCode} lang="tsx"  />
-                <div class="mt-2 text-sm text-green-700 bg-green-50 p-2 rounded">
-                  Much cleaner! Loading and error states are handled by Suspense and Error Boundaries.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">From useState + useEffect</h3>
-
-            <div class="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Before</h4>
-                <Code code={beforeUseEffectCode} lang="tsx"  />
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">After</h4>
-                <Code code={afterUseFetchCode} lang="tsx"  />
-                <div class="mt-2 text-sm text-green-700 bg-green-50 p-2 rounded">
-                  No more manual loading states, error handling, or dependency arrays!
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">From React Query / SWR</h3>
-
-            <div class="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">React Query</h4>
-                <Code code={reactQueryCode} lang="tsx"  />
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Count Cachula</h4>
-                <Code code={countCachulaCode} lang="tsx"  />
-                <div class="mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded">
-                  Similar simplicity, but with built-in cache-first behavior and SSE integration.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">Key Differences</h3>
-
-            <div class="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 class="font-bold text-purple-700 mb-3">Traditional Approach</h4>
-                <ul class="space-y-2 text-gray-700">
-                  <li class="flex items-start">
-                    <span class="text-red-500 mr-2">×</span>
-                    <span>Manual loading state management</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-red-500 mr-2">×</span>
-                    <span>Complex error handling</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-red-500 mr-2">×</span>
-                    <span>Conditional rendering for loading/error</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-red-500 mr-2">×</span>
-                    <span>Manual dependency management</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-red-500 mr-2">×</span>
-                    <span>No automatic cache invalidation</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-3">Count Cachula Approach</h4>
-                <ul class="space-y-2 text-gray-700">
-                  <li class="flex items-start">
-                    <span class="text-green-500 mr-2">✓</span>
-                    <span>Suspense handles loading automatically</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-green-500 mr-2">✓</span>
-                    <span>Error Boundaries catch errors</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-green-500 mr-2">✓</span>
-                    <span>Clean components with no conditionals</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-green-500 mr-2">✓</span>
-                    <span>Automatic URL-based caching</span>
-                  </li>
-                  <li class="flex items-start">
-                    <span class="text-green-500 mr-2">✓</span>
-                    <span>Real-time updates via SSE</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- Key Benefits -->
       <section class="bg-gradient-to-r from-purple-100 to-orange-100 rounded-lg p-8 mb-16">
@@ -1177,7 +723,6 @@ return <div>Hello, {user.name}!</div>;`;
               <li><a href="#api-reference" class="hover:text-purple-700 transition">API Reference</a></li>
               <li><a href="#guides" class="hover:text-purple-700 transition">Guides</a></li>
               <li><a href="#examples" class="hover:text-purple-700 transition">Examples</a></li>
-              <li><a href="#migration" class="hover:text-purple-700 transition">Migration Guide</a></li>
             </ul>
           </nav>
         </div>

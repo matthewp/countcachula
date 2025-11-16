@@ -55,30 +55,6 @@ const requestOptionsCode = `const request = new Request('/api/user', {
 
 const observable = CountCachula.fetch(request);`;
 
-const createMutationCode = `const createRequest = new Request('/api/items', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ name: 'New Item' })
-});
-
-CountCachula.fetch(createRequest).observe(async (response) => {
-  if (response.ok) {
-    const created = await response.json();
-    console.log('Created:', created);
-  }
-});`;
-
-const updateMutationCode = `const updateRequest = new Request('/api/items/123', {
-  method: 'PATCH',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ status: 'completed' })
-});
-
-CountCachula.fetch(updateRequest).observe(async (response) => {
-  if (response.ok) {
-    console.log('Updated successfully');
-  }
-});`;
 
 const errorHandlingCode = `observable.observe(async (response) => {
   try {
@@ -500,26 +476,6 @@ CountCachula.fetch(new Request('/api/config')).observe(response => {
             </div>
           </div>
 
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-2xl font-bold text-purple-800 mb-4">Working with Mutations</h3>
-            <p class="text-gray-700 mb-4">POST, PUT, PATCH, and DELETE requests work seamlessly:</p>
-
-            <div class="space-y-6">
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Create Operation</h4>
-                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
-              <Code code={createMutationCode} lang="typescript" />
-            </div>
-              </div>
-
-              <div>
-                <h4 class="font-bold text-purple-700 mb-2">Update Operation</h4>
-                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
-              <Code code={updateMutationCode} lang="typescript" />
-            </div>
-              </div>
-            </div>
-          </div>
 
           <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-2xl font-bold text-purple-800 mb-4">Error Handling</h3>
