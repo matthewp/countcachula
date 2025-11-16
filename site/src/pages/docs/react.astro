@@ -1,0 +1,1209 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Code } from 'astro-expressive-code/components';
+
+// Code snippets
+const installCode = 'npm install @countcachula/react @countcachula/core';
+
+const basicSuspenseCode = `import { Suspense } from 'react';
+import { useFetch } from '@countcachula/react';
+
+function IssueList() {
+  // This suspends until data is available
+  const issues = useFetch<Issue[]>('/api/issues');
+
+  // Component only renders when data exists - no loading state needed!
+  return (
+    <ul>
+      {issues.map(issue => (
+        <li key={issue.id}>{issue.title}</li>
+      ))}
+    </ul>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary fallback={<ErrorMessage />}>
+      <Suspense fallback={<LoadingSpinner />}>
+        <IssueList />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}`;
+
+const moduleSharedCacheCode = `// All these components share the same cache
+function ComponentA() {
+  const data = useFetch('/api/data'); // First request
+}
+
+function ComponentB() {
+  const data = useFetch('/api/data'); // Returns cached instantly
+}
+
+function ComponentC() {
+  const data = useFetch('/api/data'); // Also cached
+}`;
+
+const sseConnectionCode = `function App() {
+  // Establish SSE connection for cache invalidation
+  useConnection('/api/cache-events', {
+    preload: {
+      onHint: true,
+      maxConcurrent: 3,
+    },
+  });
+
+  return <YourApp />;
+}`;
+
+const userProfileExampleCode = `function UserProfile({ userId }: { userId: string }) {
+  const user = useFetch<User>(\`/api/users/\${userId}\`, {
+    headers: {
+      Authorization: \`Bearer \${token}\`,
+    },
+  });
+
+  return <div>Welcome, {user.name}!</div>;
+}`;
+
+const connectionExampleCode = `function App() {
+  useConnection('/api/cache-events', {
+    preload: {
+      onInvalidate: true,   // Preload on cache invalidation
+      onHint: true,         // Preload on server hints
+      maxConcurrent: 5,     // Limit concurrent preloads
+    },
+  });
+
+  return <Router />;
+}`;
+
+const simpleListCode = `interface Issue {
+  id: number;
+  title: string;
+  status: 'open' | 'closed';
+}
+
+function IssueList() {
+  const issues = useFetch<Issue[]>('/api/issues');
+
+  return (
+    <div>
+      <h1>Issues ({issues.length})</h1>
+      <ul>
+        {issues.map(issue => (
+          <li key={issue.id}>
+            <span className={issue.status}>{issue.title}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}`;
+
+const detailComponentCode = `function IssueDetail({ id }: { id: string }) {
+  const issue = useFetch<Issue>(\`/api/issues/\${id}\`);
+  const comments = useFetch<Comment[]>(\`/api/issues/\${id}/comments\`);
+
+  return (
+    <div>
+      <h1>{issue.title}</h1>
+      <p>Status: {issue.status}</p>
+
+      <h2>Comments ({comments.length})</h2>
+      {comments.map(comment => (
+        <div key={comment.id}>
+          <strong>{comment.author}</strong>
+          <p>{comment.body}</p>
+        </div>
+      ))}
+    </div>
+  );
+}`;
+
+const customTransformCode = `function ReadmeViewer() {
+  const content = useFetch<string>('/api/readme.txt', {
+    transform: async (response) => response.text(),
+  });
+
+  return <pre>{content}</pre>;
+}
+
+function ImageViewer() {
+  const imageBlob = useFetch<string>('/api/chart.png', {
+    transform: async (response) => {
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
+    },
+  });
+
+  return <img src={imageBlob} alt="Chart" />;
+}`;
+
+const basicErrorBoundaryCode = `import { ErrorBoundary } from 'react-error-boundary';
+
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div className="error-container">
+      <h2>Something went wrong</h2>
+      <p>{error.message}</p>
+      <button onClick={resetErrorBoundary}>Try again</button>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onReset={() => window.location.reload()}
+    >
+      <Suspense fallback={<LoadingSpinner />}>
+        <DataComponent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}`;
+
+const granularErrorHandlingCode = `function UserDashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+
+      <ErrorBoundary fallback={<div>Failed to load profile</div>}>
+        <Suspense fallback={<ProfileSkeleton />}>
+          <UserProfile />
+        </Suspense>
+      </ErrorBoundary>
+
+      <ErrorBoundary fallback={<div>Failed to load notifications</div>}>
+        <Suspense fallback={<NotificationsSkeleton />}>
+          <Notifications />
+        </Suspense>
+      </ErrorBoundary>
+    </div>
+  );
+}`;
+
+const bearerTokenAuthCode = `function useAuthenticatedFetch<T>(url: string) {
+  const token = useAuthToken(); // Your auth hook
+
+  return useFetch<T>(url, {
+    headers: {
+      Authorization: \`Bearer \${token}\`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+function ProtectedData() {
+  const userData = useAuthenticatedFetch<UserData>('/api/user');
+
+  return <div>Welcome, {userData.name}!</div>;
+}`;
+
+const contextAuthCode = `const AuthContext = createContext<{ token: string | null }>({ token: null });
+
+function AuthenticatedFetch<T>({ url, children }: { url: string; children: (data: T) => ReactNode }) {
+  const { token } = useContext(AuthContext);
+
+  const data = useFetch<T>(url, {
+    headers: token ? {
+      Authorization: \`Bearer \${token}\`,
+    } : undefined,
+  });
+
+  return <>{children(data)}</>;
+}
+
+// Usage
+<AuthenticatedFetch<User[]> url="/api/users">
+  {users => (
+    <ul>
+      {users.map(user => <li key={user.id}>{user.name}</li>)}
+    </ul>
+  )}
+</AuthenticatedFetch>`;
+
+const appLevelConnectionCode = `function App() {
+  // Establish connection at app root
+  useConnection('/api/cache-events', {
+    preload: {
+      onHint: true,
+      maxConcurrent: 3,
+    },
+  });
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/issues" element={<IssueList />} />
+        <Route path="/issues/:id" element={<IssueDetail />} />
+      </Routes>
+    </Router>
+  );
+}`;
+
+const conditionalConnectionCode = `function App() {
+  const { user } = useAuth();
+
+  // Only connect if authenticated
+  useConnection(user ? '/api/cache-events' : null, {
+    preload: {
+      onInvalidate: true,
+      onHint: true,
+      maxConcurrent: 5,
+    },
+  });
+
+  return user ? <AuthenticatedApp /> : <LoginForm />;
+}`;
+
+const customConnectionHandlingCode = `function useSmartConnection() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Only connect when online
+  useConnection(isOnline ? '/api/cache-events' : null);
+}
+
+function App() {
+  useSmartConnection();
+  return <YourApp />;
+}`;
+
+// Additional code snippets for examples section
+const completeAppSetupCode = `import { Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ErrorBoundary } from 'react-error-boundary';
+import { useConnection } from '@countcachula/react';
+
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div className="error">
+      <h2>Oops! Something went wrong</h2>
+      <p>{error.message}</p>
+      <button onClick={resetErrorBoundary}>Try again</button>
+    </div>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <div className="spinner">
+      <div className="loading-animation" />
+      <p>Loading...</p>
+    </div>
+  );
+}
+
+function App() {
+  // Connect to SSE for real-time updates
+  useConnection('/api/cache-events', {
+    preload: {
+      onHint: true,
+      onInvalidate: false,
+      maxConcurrent: 3,
+    },
+  });
+
+  return (
+    <BrowserRouter>
+      <ErrorBoundary
+        FallbackComponent={ErrorFallback}
+        onReset={() => window.location.reload()}
+      >
+        <div className="app">
+          <nav>
+            <Link to="/">Home</Link>
+            <Link to="/issues">Issues</Link>
+          </nav>
+
+          <main>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/issues" element={<IssuesPage />} />
+                <Route path="/issues/:id" element={<IssueDetailPage />} />
+              </Routes>
+            </Suspense>
+          </main>
+        </div>
+      </ErrorBoundary>
+    </BrowserRouter>
+  );
+}`;
+
+const masterDetailCode = `interface Issue {
+  id: number;
+  title: string;
+  status: 'open' | 'closed';
+  labels: string[];
+}
+
+function IssuesPage() {
+  return (
+    <div className="issues-layout">
+      <aside className="sidebar">
+        <Suspense fallback={<div>Loading issues...</div>}>
+          <IssueList />
+        </Suspense>
+      </aside>
+
+      <main className="content">
+        <Suspense fallback={<div>Loading issue details...</div>}>
+          <IssueDetail />
+        </Suspense>
+      </main>
+    </div>
+  );
+}
+
+function IssueList() {
+  const issues = useFetch<Issue[]>('/api/issues');
+  const [selectedId, setSelectedId] = useSearchParams();
+
+  return (
+    <div>
+      <h2>Issues ({issues.length})</h2>
+      <ul>
+        {issues.map(issue => (
+          <li
+            key={issue.id}
+            className={selectedId === issue.id.toString() ? 'selected' : ''}
+            onClick={() => setSelectedId({ id: issue.id.toString() })}
+          >
+            <span className={issue.status}>{issue.title}</span>
+            <div className="labels">
+              {issue.labels.map(label => (
+                <span key={label} className="label">{label}</span>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function IssueDetail() {
+  const [searchParams] = useSearchParams();
+  const issueId = searchParams.get('id');
+
+  if (!issueId) {
+    return <div>Select an issue to view details</div>;
+  }
+
+  const issue = useFetch<Issue>(\`/api/issues/\${issueId}\`);
+  const comments = useFetch<Comment[]>(\`/api/issues/\${issueId}/comments\`);
+
+  return (
+    <div>
+      <h1>{issue.title}</h1>
+      <p>Status: <span className={issue.status}>{issue.status}</span></p>
+
+      <div className="comments">
+        <h3>Comments ({comments.length})</h3>
+        {comments.map(comment => (
+          <div key={comment.id} className="comment">
+            <strong>{comment.author}</strong>
+            <time>{new Date(comment.createdAt).toLocaleString()}</time>
+            <p>{comment.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}`;
+
+const optimisticUpdatesCode = `function CreateIssueForm({ onSuccess }: { onSuccess: () => void }) {
+  const [title, setTitle] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+
+      if (response.ok) {
+        setTitle('');
+        onSuccess();
+
+        // Note: SSE connection will automatically invalidate
+        // the issues list cache, causing components to re-render
+        // with the new issue included
+      } else {
+        throw new Error('Failed to create issue');
+      }
+    } catch (error) {
+      console.error('Error creating issue:', error);
+      // Handle error (show notification, etc.)
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Issue title"
+        disabled={isSubmitting}
+      />
+      <button type="submit" disabled={isSubmitting || !title.trim()}>
+        {isSubmitting ? 'Creating...' : 'Create Issue'}
+      </button>
+    </form>
+  );
+}
+
+// Usage in parent component
+function IssuesPage() {
+  const [showForm, setShowForm] = useState(false);
+
+  return (
+    <div>
+      <div className="header">
+        <h1>Issues</h1>
+        <button onClick={() => setShowForm(true)}>New Issue</button>
+      </div>
+
+      {showForm && (
+        <CreateIssueForm onSuccess={() => setShowForm(false)} />
+      )}
+
+      <Suspense fallback={<div>Loading issues...</div>}>
+        <IssueList />
+      </Suspense>
+    </div>
+  );
+}`;
+
+const memoComponentCode = `import { memo } from 'react';
+
+const IssueCard = memo(function IssueCard({ issue }: { issue: Issue }) {
+  return (
+    <div className="issue-card">
+      <h3>{issue.title}</h3>
+      <p>{issue.description}</p>
+      <div className="labels">
+        {issue.labels.map(label => (
+          <span key={label}>{label}</span>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+function IssueList() {
+  const issues = useFetch<Issue[]>('/api/issues');
+
+  return (
+    <div>
+      {issues.map(issue => (
+        <IssueCard key={issue.id} issue={issue} />
+      ))}
+    </div>
+  );
+}`;
+
+const nestedSuspenseCode = `function Dashboard() {
+  return (
+    <div className="dashboard">
+      {/* Critical data loads first */}
+      <Suspense fallback={<div>Loading user info...</div>}>
+        <UserInfo />
+      </Suspense>
+
+      <div className="dashboard-grid">
+        {/* Each section loads independently */}
+        <Suspense fallback={<ChartSkeleton />}>
+          <StatsChart />
+        </Suspense>
+
+        <Suspense fallback={<ListSkeleton />}>
+          <RecentActivity />
+        </Suspense>
+
+        <Suspense fallback={<NotificationSkeleton />}>
+          <Notifications />
+        </Suspense>
+      </div>
+    </div>
+  );
+}`;
+
+const conditionalDataLoadingCode = `function UserProfile({ userId }: { userId: string }) {
+  const user = useFetch<User>(\`/api/users/\${userId}\`);
+
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <p>{user.email}</p>
+
+      {user.isAdmin && (
+        <Suspense fallback={<div>Loading admin data...</div>}>
+          <AdminPanel userId={userId} />
+        </Suspense>
+      )}
+
+      {user.hasNotifications && (
+        <Suspense fallback={<div>Loading notifications...</div>}>
+          <NotificationsList userId={userId} />
+        </Suspense>
+      )}
+    </div>
+  );
+}`;
+
+// Migration code snippets
+const beforeObservableCode = `const [issues, setIssues] = useState<Issue[]>([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<Error | null>(null);
+
+useEffect(() => {
+  const request = new Request('/api/issues');
+  const observable = CountCachula.fetch(request);
+
+  const unsubscribe = observable.observe(async (response) => {
+    try {
+      const data = await response.json();
+      setIssues(data);
+      setLoading(false);
+    } catch (err) {
+      setError(err);
+      setLoading(false);
+    }
+  });
+
+  return unsubscribe;
+}, []);
+
+if (loading) return <Spinner />;
+if (error) return <ErrorMessage error={error} />;
+
+return <IssueList issues={issues} />;`;
+
+const afterHooksCode = `const issues = useFetch<Issue[]>('/api/issues');
+
+return <IssueList issues={issues} />;`;
+
+const beforeUseEffectCode = `const [user, setUser] = useState<User | null>(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  async function fetchUser() {
+    try {
+      const response = await fetch('/api/user');
+      const userData = await response.json();
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchUser();
+}, []);
+
+if (loading) return <div>Loading...</div>;
+if (!user) return <div>No user found</div>;
+
+return <div>Hello, {user.name}!</div>;`;
+
+const afterUseFetchCode = `const user = useFetch<User>('/api/user');
+
+return <div>Hello, {user.name}!</div>;`;
+
+const reactQueryCode = `const { data: user, isLoading, error } = useQuery({
+  queryKey: ['user', userId],
+  queryFn: () => fetch(\`/api/users/\${userId}\`).then(r => r.json()),
+});
+
+if (isLoading) return <div>Loading...</div>;
+if (error) return <div>Error: {error.message}</div>;
+
+return <div>Hello, {user.name}!</div>;`;
+
+const countCachulaCode = `const user = useFetch<User>(\`/api/users/\${userId}\`);
+
+return <div>Hello, {user.name}!</div>;`;
+---
+
+<Layout title="React Hooks - Count Cachula">
+  <div class="min-h-screen bg-gradient-to-br from-purple-50 to-orange-50">
+    <!-- Header -->
+    <header class="bg-purple-900 text-purple-100 py-6 px-6 shadow-lg">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <a href="/" class="text-2xl font-bold hover:text-orange-400 transition">🧛 Count Cachula</a>
+          <span class="text-purple-300">/</span>
+          <span class="text-orange-400">React Hooks</span>
+        </div>
+        <nav class="flex gap-6">
+          <a href="/docs/core/" class="hover:text-orange-400 transition">Core</a>
+          <a href="/docs/sse/" class="hover:text-orange-400 transition">SSE</a>
+          <a href="/docs/react/" class="text-orange-400">React</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Main content column -->
+        <div class="lg:col-span-3">
+          <!-- Getting Started -->
+      <section id="getting-started" class="mb-16">
+        <h1 class="text-4xl font-bold text-purple-900 mb-4">React Hooks Documentation</h1>
+        <p class="text-xl text-gray-700 mb-8">
+          React hooks for Count Cachula - stale-while-revalidate caching with Suspense support.
+        </p>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 class="text-2xl font-bold text-purple-900 mb-4">Installation</h2>
+          <div class="bg-purple-50 rounded-xl p-6 border-2 border-purple-200">
+            <Code code={installCode} lang="bash" />
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-2xl font-bold text-purple-900 mb-4">Basic Setup with Suspense</h2>
+          <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+            <Code code={basicSuspenseCode} lang="tsx" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Concepts -->
+      <section id="core-concepts" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Core Concepts</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Suspense Integration</h3>
+            <p class="text-gray-700 mb-4">
+              Count Cachula's React hooks are built around React's Suspense pattern:
+            </p>
+            <ul class="space-y-3 text-gray-700 mb-4">
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>No Loading States</strong> - Suspense handles loading UI automatically</div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>Type Safety</strong> - Data is always the correct type, never undefined</div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>Clean Components</strong> - No conditional rendering for loading states</div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>Error Boundaries</strong> - Errors throw to nearest Error Boundary</div>
+              </li>
+            </ul>
+
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+              <h4 class="font-bold text-blue-900 mb-2">Suspense Behavior:</h4>
+              <ol class="text-blue-800 space-y-1">
+                <li>1. <strong>First render (no cache)</strong> - Suspends until data arrives</li>
+                <li>2. <strong>First render (with cache)</strong> - Returns cached data immediately, fetches fresh data in background</li>
+                <li>3. <strong>Fresh data arrives</strong> - Component re-renders with new data, no loading state</li>
+                <li>4. <strong>Errors</strong> - Throws to nearest Error Boundary</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Module-Level Caching</h3>
+            <p class="text-gray-700 mb-4">
+              The React package leverages module-level caching for optimal performance:
+            </p>
+            <Code code={moduleSharedCacheCode} lang="tsx"  />
+
+            <div class="mt-4 bg-green-50 border-l-4 border-green-500 p-4">
+              <p class="text-green-900">
+                <strong>Benefits:</strong> No prop drilling, automatic deduplication, shared state across components
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Real-time Updates via SSE</h3>
+            <p class="text-gray-700 mb-4">
+              Connect to server-sent events for automatic cache invalidation:
+            </p>
+            <Code code={sseConnectionCode} lang="tsx"  />
+
+            <div class="mt-4 text-gray-700">
+              <p class="font-semibold mb-2">When server sends invalidation events:</p>
+              <ul class="space-y-1 ml-4">
+                <li>• Affected components automatically re-render with fresh data</li>
+                <li>• No manual cache management needed</li>
+                <li>• Preload hints warm cache for likely next navigation</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Reference -->
+      <section id="api-reference" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">API Reference</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">
+              <code class="bg-purple-100 px-2 py-1 rounded">useFetch&lt;T&gt;(url, options?): T</code>
+            </h3>
+            <p class="text-gray-700 mb-4">Fetches data with automatic caching and Suspense support.</p>
+
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-bold text-purple-700">Parameters:</h4>
+                <ul class="ml-4 text-gray-700 space-y-2">
+                  <li><code class="bg-gray-100 px-1">url: string</code> - The URL to fetch</li>
+                  <li><code class="bg-gray-100 px-1">options?: FetchOptions</code> - Optional configuration:
+                    <ul class="ml-4 mt-2 space-y-1">
+                      <li>• <code class="bg-gray-100 px-1">headers</code> - Request headers</li>
+                      <li>• <code class="bg-gray-100 px-1">transform</code> - Custom transform function (defaults to JSON parsing)</li>
+                      <li>• All other standard <code class="bg-gray-100 px-1">RequestInit</code> options except <code class="bg-gray-100 px-1">method</code></li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700">Returns:</h4>
+                <ul class="ml-4 text-gray-700">
+                  <li><code class="bg-gray-100 px-1">T</code> - The fetched and typed data. Never returns <code>undefined</code> or loading states.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700">Example:</h4>
+                <Code code={userProfileExampleCode} lang="tsx"  />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">
+              <code class="bg-purple-100 px-2 py-1 rounded">useConnection(endpoint, options?): void</code>
+            </h3>
+            <p class="text-gray-700 mb-4">Manages SSE connection for real-time cache invalidation.</p>
+
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-bold text-purple-700">Parameters:</h4>
+                <ul class="ml-4 text-gray-700 space-y-2">
+                  <li><code class="bg-gray-100 px-1">endpoint: string</code> - SSE endpoint URL</li>
+                  <li><code class="bg-gray-100 px-1">options?: ConnectionOptions</code> - Connection configuration:
+                    <ul class="ml-4 mt-2 space-y-1">
+                      <li>• <code class="bg-gray-100 px-1">preload</code> - Preloading configuration
+                        <ul class="ml-4 mt-1 space-y-1">
+                          <li>- <code class="bg-gray-100 px-1">onInvalidate</code> - Preload on invalidation events</li>
+                          <li>- <code class="bg-gray-100 px-1">onHint</code> - Preload on hint events</li>
+                          <li>- <code class="bg-gray-100 px-1">maxConcurrent</code> - Max concurrent preloads</li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700">Example:</h4>
+                <Code code={connectionExampleCode} lang="tsx"  />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Guides -->
+      <section id="guides" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Guides</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Basic Data Fetching</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Simple List Component</h4>
+                <Code code={simpleListCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Detail Component with Parameters</h4>
+                <Code code={detailComponentCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Custom Transform Function</h4>
+                <Code code={customTransformCode} lang="tsx"  />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Error Boundaries</h3>
+            <p class="text-gray-700 mb-4">Handle errors gracefully with React Error Boundaries:</p>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Basic Error Boundary</h4>
+                <Code code={basicErrorBoundaryCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Granular Error Handling</h4>
+                <Code code={granularErrorHandlingCode} lang="tsx"  />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Authentication Patterns</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Bearer Token Authentication</h4>
+                <Code code={bearerTokenAuthCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Context-Based Auth</h4>
+                <Code code={contextAuthCode} lang="tsx"  />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">SSE Connection Management</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">App-Level Connection</h4>
+                <Code code={appLevelConnectionCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Conditional Connections</h4>
+                <Code code={conditionalConnectionCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Custom Connection Handling</h4>
+                <Code code={customConnectionHandlingCode} lang="tsx"  />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Examples -->
+      <section id="examples" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Examples</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Complete App Setup</h3>
+            <Code code={completeAppSetupCode} lang="tsx"  />
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Master-Detail Pattern</h3>
+            <Code code={masterDetailCode} lang="tsx"  />
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Form with Optimistic Updates</h3>
+            <Code code={optimisticUpdatesCode} lang="tsx"  />
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Performance Tips</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Memo for Expensive Renders</h4>
+                <Code code={memoComponentCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Nested Suspense Boundaries</h4>
+                <Code code={nestedSuspenseCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Conditional Data Loading</h4>
+                <Code code={conditionalDataLoadingCode} lang="tsx"  />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Migration Guide -->
+      <section id="migration" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Migration Guide</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">From Observable Pattern</h3>
+
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Before (using observables directly)</h4>
+                <Code code={beforeObservableCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">After (using React hooks)</h4>
+                <Code code={afterHooksCode} lang="tsx"  />
+                <div class="mt-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+                  Much cleaner! Loading and error states are handled by Suspense and Error Boundaries.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">From useState + useEffect</h3>
+
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Before</h4>
+                <Code code={beforeUseEffectCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">After</h4>
+                <Code code={afterUseFetchCode} lang="tsx"  />
+                <div class="mt-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+                  No more manual loading states, error handling, or dependency arrays!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">From React Query / SWR</h3>
+
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">React Query</h4>
+                <Code code={reactQueryCode} lang="tsx"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Count Cachula</h4>
+                <Code code={countCachulaCode} lang="tsx"  />
+                <div class="mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded">
+                  Similar simplicity, but with built-in cache-first behavior and SSE integration.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Key Differences</h3>
+
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-3">Traditional Approach</h4>
+                <ul class="space-y-2 text-gray-700">
+                  <li class="flex items-start">
+                    <span class="text-red-500 mr-2">×</span>
+                    <span>Manual loading state management</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-red-500 mr-2">×</span>
+                    <span>Complex error handling</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-red-500 mr-2">×</span>
+                    <span>Conditional rendering for loading/error</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-red-500 mr-2">×</span>
+                    <span>Manual dependency management</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-red-500 mr-2">×</span>
+                    <span>No automatic cache invalidation</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-3">Count Cachula Approach</h4>
+                <ul class="space-y-2 text-gray-700">
+                  <li class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span>Suspense handles loading automatically</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span>Error Boundaries catch errors</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span>Clean components with no conditionals</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span>Automatic URL-based caching</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>
+                    <span>Real-time updates via SSE</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Benefits -->
+      <section class="bg-gradient-to-r from-purple-100 to-orange-100 rounded-lg p-8 mb-16">
+        <h2 class="text-2xl font-bold text-purple-900 mb-6">Key Benefits</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div class="flex items-start">
+              <span class="text-green-500 mr-3 text-xl">✓</span>
+              <div>
+                <h3 class="font-bold text-purple-800">No loading states</h3>
+                <p class="text-gray-700">Suspense handles loading UI automatically</p>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <span class="text-green-500 mr-3 text-xl">✓</span>
+              <div>
+                <h3 class="font-bold text-purple-800">Type safety</h3>
+                <p class="text-gray-700">Data is always the correct type, never undefined</p>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <span class="text-green-500 mr-3 text-xl">✓</span>
+              <div>
+                <h3 class="font-bold text-purple-800">Clean components</h3>
+                <p class="text-gray-700">No conditional rendering for loading/error states</p>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="flex items-start">
+              <span class="text-green-500 mr-3 text-xl">✓</span>
+              <div>
+                <h3 class="font-bold text-purple-800">Stale-while-revalidate</h3>
+                <p class="text-gray-700">Instant cache hits with background updates</p>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <span class="text-green-500 mr-3 text-xl">✓</span>
+              <div>
+                <h3 class="font-bold text-purple-800">Real-time updates</h3>
+                <p class="text-gray-700">SSE integration for cache invalidation</p>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <span class="text-green-500 mr-3 text-xl">✓</span>
+              <div>
+                <h3 class="font-bold text-purple-800">React 18+ required</h3>
+                <p class="text-gray-700">Built for modern React with Suspense</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Next Steps -->
+      <section class="bg-gradient-to-r from-purple-100 to-orange-100 rounded-lg p-8">
+        <h2 class="text-2xl font-bold text-purple-900 mb-4">Next Steps</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <a href="/docs/core/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">← Core Library</h3>
+            <p class="text-gray-600">Understand the fundamentals</p>
+          </a>
+          <a href="/docs/sse/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">← SSE Package</h3>
+            <p class="text-gray-600">Set up real-time updates</p>
+          </a>
+          <a href="https://bugs.countcachula.spooky.click/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">Live Demo →</h3>
+            <p class="text-gray-600">See it working in production</p>
+          </a>
+        </div>
+      </section>
+        </div>
+
+        <!-- Table of Contents sidebar -->
+        <div class="lg:col-span-1">
+          <nav class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="font-bold text-purple-900 mb-4">On this page</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#getting-started" class="hover:text-purple-700 transition">Getting Started</a></li>
+              <li><a href="#core-concepts" class="hover:text-purple-700 transition">Core Concepts</a></li>
+              <li><a href="#api-reference" class="hover:text-purple-700 transition">API Reference</a></li>
+              <li><a href="#guides" class="hover:text-purple-700 transition">Guides</a></li>
+              <li><a href="#examples" class="hover:text-purple-700 transition">Examples</a></li>
+              <li><a href="#migration" class="hover:text-purple-700 transition">Migration Guide</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-purple-900 text-purple-100 py-8 px-6 mt-16">
+      <div class="max-w-6xl mx-auto text-center">
+        <div class="flex justify-center gap-6 mb-4">
+          <a href="/" class="hover:text-orange-400 transition">Home</a>
+          <a href="https://github.com/matthewp/countcachula" class="hover:text-orange-400 transition">GitHub</a>
+          <a href="https://npmjs.com/package/@countcachula/react" class="hover:text-orange-400 transition">npm</a>
+        </div>
+        <p class="text-sm">Count Cachula React - BSD-3-Clause License</p>
+      </div>
+    </footer>
+  </div>
+</Layout>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+
+  code {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+  }
+</style>

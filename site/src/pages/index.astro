@@ -3,8 +3,6 @@ import Layout from '../layouts/Layout.astro';
 import Hero from '../components/Hero.astro';
 import WhatIs from '../components/WhatIs.astro';
 import HowItWorks from '../components/HowItWorks.astro';
-import CoreDocs from '../components/CoreDocs.astro';
-import SSEDocs from '../components/SSEDocs.astro';
 ---
 
 <Layout title="Count Cachula - Local-first performance without the complexity">
@@ -12,8 +10,78 @@ import SSEDocs from '../components/SSEDocs.astro';
     <Hero />
     <WhatIs />
     <HowItWorks />
-    <CoreDocs />
-    <SSEDocs />
+    <!-- Documentation Links -->
+    <section class="bg-gradient-to-r from-purple-100 to-orange-100 py-16 px-6">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="text-3xl font-bold text-purple-900 text-center mb-4">📖 Documentation</h2>
+        <p class="text-xl text-gray-700 text-center mb-12">
+          Comprehensive guides for each package
+        </p>
+
+        <div class="grid md:grid-cols-3 gap-8">
+          <a href="/docs/core/" class="group bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div class="text-center">
+              <div class="text-4xl mb-4">📦</div>
+              <h3 class="text-2xl font-bold text-purple-800 mb-3">Core Library</h3>
+              <p class="text-gray-600 mb-4">
+                Learn the fundamentals of Count Cachula's cache-first architecture and stale-while-revalidate pattern.
+              </p>
+              <div class="inline-flex items-center text-purple-700 font-semibold group-hover:text-orange-500 transition">
+                Read Core Docs
+                <svg class="ml-2 w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
+            </div>
+          </a>
+
+          <a href="/docs/sse/" class="group bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div class="text-center">
+              <div class="text-4xl mb-4">🔄</div>
+              <h3 class="text-2xl font-bold text-purple-800 mb-3">SSE Package</h3>
+              <p class="text-gray-600 mb-4">
+                Set up real-time cache invalidation and preload hints using Server-Sent Events.
+              </p>
+              <div class="inline-flex items-center text-purple-700 font-semibold group-hover:text-orange-500 transition">
+                Read SSE Docs
+                <svg class="ml-2 w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
+            </div>
+          </a>
+
+          <a href="/docs/react/" class="group bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div class="text-center">
+              <div class="text-4xl mb-4">⚛️</div>
+              <h3 class="text-2xl font-bold text-purple-800 mb-3">React Hooks</h3>
+              <p class="text-gray-600 mb-4">
+                Build React apps with Suspense integration and clean, declarative data fetching.
+              </p>
+              <div class="inline-flex items-center text-purple-700 font-semibold group-hover:text-orange-500 transition">
+                Read React Docs
+                <svg class="ml-2 w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="text-center mt-12">
+          <p class="text-gray-600 mb-6">
+            Ready to see Count Cachula in action?
+          </p>
+          <a href="https://bugs.countcachula.spooky.click/"
+             class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg">
+            🚀 View Live Demo
+            <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
 
     <!-- Footer -->
     <footer class="bg-purple-900 text-purple-100 py-12 px-6">

@@ -1,0 +1,1031 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Code } from 'astro-expressive-code/components';
+
+// Code snippets
+const installCode = 'npm install @countcachula/sse';
+
+const basicSetupCode = `import { CacheHub } from '@countcachula/sse';
+import { streamSSE } from 'hono/streaming';
+
+// Create a hub instance
+const hub = new CacheHub();
+
+// Set up SSE endpoint
+app.get('/api/cache-events', (c) => {
+  return streamSSE(c, async (stream) => {
+    hub.addConnection(stream);
+
+    await stream.writeSSE({
+      event: 'connected',
+      data: 'connected'
+    });
+
+    c.req.raw.signal.addEventListener('abort', () => {
+      hub.removeConnection(stream);
+    });
+
+    // Keep alive
+    while (!c.req.raw.signal.aborted) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  });
+});
+
+// Invalidate cache on mutations
+app.patch('/api/items/:id', async (c) => {
+  // ... update logic ...
+  hub.invalidate([\`item:\${id}\`, 'items-list']);
+  return c.json({ success: true });
+});`;
+
+const tagBasedInvalidationCode = `// Tag your cache entries conceptually
+hub.invalidate([
+  'user:123',        // Specific user data
+  'users-list',      // List containing this user
+  'stats:users'      // User statistics
+]);`;
+
+const cascadeInvalidationCode = `// When a parent changes, invalidate children
+hub.invalidate([
+  'project:456',
+  'project:456:tasks',
+  'project:456:members'
+]);`;
+
+const globalInvalidationCode = `// System-wide changes
+hub.invalidate(['*']); // Clear everything`;
+
+const preloadHintCode = `// After returning a list, hint about detail pages
+app.get('/api/issues', async (c) => {
+  const issues = await getIssues();
+
+  // Tell clients to preload individual issue pages
+  const urls = issues.map(i => \`/api/issues/\${i.id}\`);
+  hub.preloadHint(urls);
+
+  return c.json(issues);
+});`;
+
+const constructorCode = 'const hub = new CacheHub();';
+
+const addConnectionExampleCode = `app.get('/sse', (c) => {
+  return streamSSE(c, async (stream) => {
+    hub.addConnection(stream);
+    // ...
+  });
+});`;
+
+const removeConnectionExampleCode = `c.req.raw.signal.addEventListener('abort', () => {
+  hub.removeConnection(stream);
+});`;
+
+const invalidateExampleCode = `// Single tag
+await hub.invalidate(['user:123']);
+
+// Multiple tags
+await hub.invalidate(['posts-list', 'post:456', 'comments:456']);
+
+// Pattern matching (client-side implementation)
+await hub.invalidate(['posts:*']); // All posts`;
+
+const preloadHintExampleCode = `// Hint about related data
+await hub.preloadHint([
+  '/api/user/profile',
+  '/api/user/settings',
+  '/api/user/notifications'
+]);
+
+// Hint about next page
+await hub.preloadHint(['/api/items?page=2']);`;
+
+const sseStreamInterfaceCode = `interface SSEStream {
+  writeSSE: (message: {
+    data: string;
+    event: string;
+  }) => Promise<void>;
+}`;
+
+const honoSetupCode = `import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
+import { CacheHub } from '@countcachula/sse';
+
+const app = new Hono();
+const hub = new CacheHub();
+
+app.get('/api/cache-events', (c) => {
+  return streamSSE(c, async (stream) => {
+    // Register connection
+    hub.addConnection(stream);
+
+    // Send initial connection event
+    await stream.writeSSE({
+      event: 'connected',
+      data: JSON.stringify({ timestamp: Date.now() })
+    });
+
+    // Clean up on disconnect
+    c.req.raw.signal.addEventListener('abort', () => {
+      hub.removeConnection(stream);
+      console.log('Client disconnected');
+    });
+
+    // Keep connection alive with heartbeat
+    while (!c.req.raw.signal.aborted) {
+      await new Promise(resolve => setTimeout(resolve, 30000));
+
+      // Send heartbeat
+      await stream.writeSSE({
+        event: 'heartbeat',
+        data: 'ping'
+      });
+    }
+  });
+});`;
+
+const expressSetupCode = `import express from 'express';
+import { CacheHub } from '@countcachula/sse';
+
+const app = express();
+const hub = new CacheHub();
+
+app.get('/api/cache-events', (req, res) => {
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+
+  // Create stream wrapper
+  const stream = {
+    writeSSE: async ({ event, data }) => {
+      res.write(\`event: \${event}\\n\`);
+      res.write(\`data: \${data}\\n\\n\`);
+    }
+  };
+
+  hub.addConnection(stream);
+
+  // Send initial event
+  stream.writeSSE({
+    event: 'connected',
+    data: 'connected'
+  });
+
+  // Clean up on disconnect
+  req.on('close', () => {
+    hub.removeConnection(stream);
+  });
+});`;
+
+const entityInvalidationCode = `// When an entity changes, invalidate all related caches
+app.patch('/api/users/:id', async (c) => {
+  const userId = c.req.param('id');
+  const updates = await c.req.json();
+
+  await updateUser(userId, updates);
+
+  // Invalidate specific user and any lists containing them
+  await hub.invalidate([
+    \`user:\${userId}\`,              // User detail
+    'users-list',                  // Main list
+    \`team:\${updates.teamId}:members\`, // Team member list
+    'stats:users'                  // User statistics
+  ]);
+
+  return c.json({ success: true });
+});`;
+
+const hierarchicalInvalidationCode = `// Invalidate parent and all children
+app.delete('/api/projects/:id', async (c) => {
+  const projectId = c.req.param('id');
+
+  await deleteProject(projectId);
+
+  await hub.invalidate([
+    \`project:\${projectId}\`,
+    \`project:\${projectId}:tasks\`,
+    \`project:\${projectId}:members\`,
+    \`project:\${projectId}:files\`,
+    'projects-list'
+  ]);
+
+  return c.json({ success: true });
+});`;
+
+const timeBasedInvalidationCode = `// Periodically invalidate volatile data
+setInterval(async () => {
+  await hub.invalidate([
+    'stats:realtime',
+    'dashboard:metrics',
+    'active-users'
+  ]);
+}, 60000); // Every minute`;
+
+const listToDetailPreloadingCode = `app.get('/api/posts', async (c) => {
+  const posts = await getPosts();
+
+  // After sending list, hint about individual posts
+  if (posts.length > 0) {
+    // Preload first 5 posts
+    const urls = posts
+      .slice(0, 5)
+      .map(p => \`/api/posts/\${p.id}\`);
+
+    await hub.preloadHint(urls);
+  }
+
+  return c.json(posts);
+});`;
+
+const navigationPreloadingCode = `app.get('/api/user/profile', async (c) => {
+  const profile = await getUserProfile(c.userId);
+
+  // Preload likely next navigation
+  await hub.preloadHint([
+    '/api/user/settings',     // Common next step
+    '/api/user/notifications', // Often checked together
+    \`/api/users/\${profile.id}/posts\` // User's content
+  ]);
+
+  return c.json(profile);
+});`;
+
+const paginationPreloadingCode = `app.get('/api/items', async (c) => {
+  const page = parseInt(c.req.query('page') || '1');
+  const items = await getItems(page);
+
+  // Preload next page
+  if (items.hasMore) {
+    await hub.preloadHint([
+      \`/api/items?page=\${page + 1}\`
+    ]);
+  }
+
+  return c.json(items);
+});`;
+
+const completeServerSetupCode = `import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
+import { CacheHub } from '@countcachula/sse';
+
+const app = new Hono();
+const hub = new CacheHub();
+
+// In-memory database
+const items = new Map();
+
+// SSE endpoint
+app.get('/api/events', (c) => {
+  return streamSSE(c, async (stream) => {
+    hub.addConnection(stream);
+
+    await stream.writeSSE({
+      event: 'connected',
+      data: new Date().toISOString()
+    });
+
+    c.req.raw.signal.addEventListener('abort', () => {
+      hub.removeConnection(stream);
+    });
+
+    while (!c.req.raw.signal.aborted) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  });
+});
+
+// CRUD operations with cache management
+app.get('/api/items', (c) => {
+  const itemsList = Array.from(items.values());
+
+  // Preload first 3 items
+  const preloads = itemsList
+    .slice(0, 3)
+    .map(item => \`/api/items/\${item.id}\`);
+
+  if (preloads.length > 0) {
+    hub.preloadHint(preloads);
+  }
+
+  return c.json(itemsList);
+});
+
+app.post('/api/items', async (c) => {
+  const data = await c.req.json();
+  const item = {
+    id: crypto.randomUUID(),
+    ...data,
+    createdAt: new Date()
+  };
+
+  items.set(item.id, item);
+
+  // Invalidate list cache
+  await hub.invalidate(['items-list']);
+
+  // Preload the new item
+  await hub.preloadHint([\`/api/items/\${item.id}\`]);
+
+  return c.json(item, 201);
+});
+
+app.patch('/api/items/:id', async (c) => {
+  const id = c.req.param('id');
+  const updates = await c.req.json();
+
+  const item = items.get(id);
+  if (!item) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const updated = { ...item, ...updates, updatedAt: new Date() };
+  items.set(id, updated);
+
+  // Invalidate specific item and list
+  await hub.invalidate([\`item:\${id}\`, 'items-list']);
+
+  return c.json(updated);
+});`;
+
+const clientIntegrationCode = `// Client code to consume SSE events
+class CacheManager {
+  constructor() {
+    this.eventSource = null;
+    this.cache = new Map();
+  }
+
+  connect(url) {
+    this.eventSource = new EventSource(url);
+
+    this.eventSource.addEventListener('connected', (e) => {
+      console.log('Connected to cache events');
+    });
+
+    this.eventSource.addEventListener('invalidate', (e) => {
+      const tags = JSON.parse(e.data);
+      this.handleInvalidation(tags);
+    });
+
+    this.eventSource.addEventListener('preload', (e) => {
+      const routes = JSON.parse(e.data);
+      this.handlePreload(routes);
+    });
+  }
+
+  handleInvalidation(tags) {
+    // Clear matching cache entries
+    tags.forEach(tag => {
+      this.cache.delete(tag);
+
+      // Pattern matching for wildcards
+      if (tag.includes('*')) {
+        const pattern = new RegExp(tag.replace('*', '.*'));
+        for (const key of this.cache.keys()) {
+          if (pattern.test(key)) {
+            this.cache.delete(key);
+          }
+        }
+      }
+    });
+  }
+
+  async handlePreload(routes) {
+    // Preload in background
+    for (const route of routes) {
+      fetch(route)
+        .then(response => response.json())
+        .then(data => {
+          this.cache.set(route, data);
+          console.log('Preloaded:', route);
+        });
+    }
+  }
+
+  disconnect() {
+    this.eventSource?.close();
+  }
+}
+
+// Usage
+const cacheManager = new CacheManager();
+cacheManager.connect('/api/cache-events');`;
+
+const batchOperationsCode = `app.post('/api/items/batch-update', async (c) => {
+  const updates = await c.req.json(); // Array of updates
+
+  const invalidationTags = [];
+  const preloadUrls = [];
+
+  for (const update of updates) {
+    await updateItem(update.id, update.data);
+    invalidationTags.push(\`item:\${update.id}\`);
+    preloadUrls.push(\`/api/items/\${update.id}\`);
+  }
+
+  // Single invalidation for all changes
+  invalidationTags.push('items-list');
+  await hub.invalidate(invalidationTags);
+
+  // Preload all updated items
+  await hub.preloadHint(preloadUrls);
+
+  return c.json({ updated: updates.length });
+});`;
+
+const conditionalInvalidationCode = `app.patch('/api/posts/:id', async (c) => {
+  const id = c.req.param('id');
+  const updates = await c.req.json();
+  const oldPost = await getPost(id);
+
+  await updatePost(id, updates);
+
+  const tags = [\`post:\${id}\`];
+
+  // Only invalidate list if visibility changed
+  if (updates.status !== oldPost.status) {
+    tags.push('posts-list');
+    tags.push(\`posts:\${updates.status}\`);
+  }
+
+  // Only invalidate author's posts if author changed
+  if (updates.authorId !== oldPost.authorId) {
+    tags.push(\`author:\${oldPost.authorId}:posts\`);
+    tags.push(\`author:\${updates.authorId}:posts\`);
+  }
+
+  await hub.invalidate(tags);
+
+  return c.json({ success: true });
+});`;
+
+const extendedCacheHubCode = `class ExtendedCacheHub extends CacheHub {
+  async notifyUpdate(entityType: string, entityId: string, data: any) {
+    const message = JSON.stringify({
+      type: entityType,
+      id: entityId,
+      data
+    });
+
+    await this.broadcast('entity-update', message);
+  }
+
+  async broadcastMetrics(metrics: any) {
+    await this.broadcast('metrics', JSON.stringify(metrics));
+  }
+}
+
+// Usage
+const hub = new ExtendedCacheHub();
+
+app.patch('/api/users/:id', async (c) => {
+  const user = await updateUser(id, data);
+
+  // Standard invalidation
+  await hub.invalidate([\`user:\${id}\`]);
+
+  // Custom notification
+  await hub.notifyUpdate('user', id, user);
+
+  return c.json(user);
+});`;
+
+const debouncedCacheHubCode = `class DebouncedCacheHub extends CacheHub {
+  constructor() {
+    super();
+    this.pendingInvalidations = new Set();
+    this.debounceTimer = null;
+  }
+
+  async invalidate(tags: string[]) {
+    tags.forEach(tag => this.pendingInvalidations.add(tag));
+
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    this.debounceTimer = setTimeout(async () => {
+      const tags = Array.from(this.pendingInvalidations);
+      this.pendingInvalidations.clear();
+      await super.invalidate(tags);
+    }, 100); // Batch invalidations within 100ms
+  }
+}`;
+
+const selectiveCacheHubCode = `class SelectiveCacheHub extends CacheHub {
+  constructor() {
+    super();
+    this.subscriptions = new Map(); // connection -> interests
+  }
+
+  addConnection(stream, interests = ['*']) {
+    super.addConnection(stream);
+    this.subscriptions.set(stream, new Set(interests));
+  }
+
+  async invalidate(tags: string[]) {
+    for (const [connection, interests] of this.subscriptions) {
+      // Only send if connection is interested
+      const relevantTags = tags.filter(tag => {
+        return interests.has('*') ||
+               interests.has(tag) ||
+               Array.from(interests).some(i => tag.startsWith(i));
+      });
+
+      if (relevantTags.length > 0) {
+        await connection.writeSSE({
+          event: 'invalidate',
+          data: JSON.stringify(relevantTags)
+        });
+      }
+    }
+  }
+}`;
+---
+
+<Layout title="SSE Package - Count Cachula">
+  <div class="min-h-screen bg-gradient-to-br from-purple-50 to-orange-50">
+    <!-- Header -->
+    <header class="bg-purple-900 text-purple-100 py-6 px-6 shadow-lg">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <a href="/" class="text-2xl font-bold hover:text-orange-400 transition">🧛 Count Cachula</a>
+          <span class="text-purple-300">/</span>
+          <span class="text-orange-400">SSE Package</span>
+        </div>
+        <nav class="flex gap-6">
+          <a href="/docs/core/" class="hover:text-orange-400 transition">Core</a>
+          <a href="/docs/sse/" class="text-orange-400">SSE</a>
+          <a href="/docs/react/" class="hover:text-orange-400 transition">React</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Main content column -->
+        <div class="lg:col-span-3">
+          <!-- Getting Started -->
+      <section id="getting-started" class="mb-16">
+        <h1 class="text-4xl font-bold text-purple-900 mb-4">SSE Package Documentation</h1>
+        <p class="text-xl text-gray-700 mb-8">
+          Server-Sent Events integration for Count Cachula - enabling real-time cache invalidation and preload hints.
+        </p>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 class="text-2xl font-bold text-purple-900 mb-4">Installation</h2>
+          <div class="bg-purple-50 rounded-xl p-6 border-2 border-purple-200">
+            <Code code={installCode} lang="bash" />
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-2xl font-bold text-purple-900 mb-4">Basic Setup</h2>
+          <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+            <Code code={basicSetupCode} lang="typescript" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Concepts -->
+      <section id="core-concepts" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Core Concepts</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Server-Sent Events Overview</h3>
+            <p class="text-gray-700 mb-4">
+              Server-Sent Events (SSE) provide a one-way communication channel from server to client over HTTP:
+            </p>
+            <ul class="space-y-2 text-gray-700 mb-4">
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>Persistent Connection</strong> - Single long-lived HTTP connection</div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>Automatic Reconnection</strong> - Browser handles reconnection automatically</div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>Text-Based Protocol</strong> - Simple event stream format</div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div><strong>Real-Time Updates</strong> - Server can push updates instantly</div>
+              </li>
+            </ul>
+            <div class="bg-purple-50 border-l-4 border-purple-500 p-4">
+              <p class="text-purple-900 font-semibold mb-2">SSE is perfect for cache invalidation because:</p>
+              <ul class="text-purple-800 space-y-1">
+                <li>• Lightweight compared to WebSockets</li>
+                <li>• Built-in browser support</li>
+                <li>• Works through proxies and firewalls</li>
+                <li>• Ideal for server-to-client notifications</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Cache Invalidation Patterns</h3>
+            <p class="text-gray-700 mb-4">
+              Cache invalidation tells clients when their cached data is stale:
+            </p>
+
+            <div class="space-y-4">
+              <div class="bg-gray-50 rounded p-4">
+                <h4 class="font-bold text-purple-700 mb-2">Tag-Based Invalidation</h4>
+                <Code code={tagBasedInvalidationCode} lang="typescript"  />
+              </div>
+
+              <div class="bg-gray-50 rounded p-4">
+                <h4 class="font-bold text-purple-700 mb-2">Cascade Invalidation</h4>
+                <Code code={cascadeInvalidationCode} lang="typescript"  />
+              </div>
+
+              <div class="bg-gray-50 rounded p-4">
+                <h4 class="font-bold text-purple-700 mb-2">Global Invalidation</h4>
+                <Code code={globalInvalidationCode} lang="typescript"  />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Preload Hints Explained</h3>
+            <p class="text-gray-700 mb-4">
+              Preload hints tell clients what data they'll likely need next:
+            </p>
+            <Code code={preloadHintCode} lang="typescript"  />
+
+            <div class="mt-4 bg-green-50 border-l-4 border-green-500 p-4">
+              <p class="text-green-900 font-semibold mb-2">Benefits:</p>
+              <ul class="text-green-800 space-y-1">
+                <li>• <strong>Instant Navigation</strong> - Data is already cached when needed</li>
+                <li>• <strong>Predictive Loading</strong> - Load likely next steps</li>
+                <li>• <strong>Bandwidth Efficient</strong> - Only preload what's probable</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Reference -->
+      <section id="api-reference" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">API Reference</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">
+              <code class="bg-purple-100 px-2 py-1 rounded">CacheHub</code>
+            </h3>
+            <p class="text-gray-700 mb-6">Central manager for SSE connections and cache events.</p>
+
+            <div class="space-y-6 border-t pt-6">
+              <!-- Constructor -->
+              <div class="pb-6 border-b">
+                <h4 class="text-xl font-bold text-purple-700 mb-3">Constructor</h4>
+                <Code code={constructorCode} lang="typescript"  />
+                <p class="text-gray-700 mt-2">Creates a new hub instance. Typically one per server.</p>
+              </div>
+
+              <!-- addConnection -->
+              <div class="pb-6 border-b">
+                <h4 class="text-xl font-bold text-purple-700 mb-3">
+                  <code class="bg-purple-50 px-2 py-1 rounded text-base">addConnection(stream: SSEStream): void</code>
+                </h4>
+                <p class="text-gray-700 mb-3">Register a new SSE connection.</p>
+
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Parameters:</h5>
+                    <ul class="ml-4 text-gray-700">
+                      <li><code class="bg-gray-100 px-1">stream: SSEStream</code> - SSE stream object with writeSSE method</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Example:</h5>
+                    <Code code={addConnectionExampleCode} lang="typescript"  />
+                  </div>
+                </div>
+              </div>
+
+              <!-- removeConnection -->
+              <div class="pb-6 border-b">
+                <h4 class="text-xl font-bold text-purple-700 mb-3">
+                  <code class="bg-purple-50 px-2 py-1 rounded text-base">removeConnection(stream: SSEStream): void</code>
+                </h4>
+                <p class="text-gray-700 mb-3">Unregister an SSE connection.</p>
+
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Parameters:</h5>
+                    <ul class="ml-4 text-gray-700">
+                      <li><code class="bg-gray-100 px-1">stream: SSEStream</code> - Previously added stream to remove</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Example:</h5>
+                    <Code code={removeConnectionExampleCode} lang="typescript"  />
+                  </div>
+                </div>
+              </div>
+
+              <!-- invalidate -->
+              <div class="pb-6 border-b">
+                <h4 class="text-xl font-bold text-purple-700 mb-3">
+                  <code class="bg-purple-50 px-2 py-1 rounded text-base">invalidate(tags: string[]): Promise&lt;void&gt;</code>
+                </h4>
+                <p class="text-gray-700 mb-3">Broadcast cache invalidation event to all connected clients.</p>
+
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Parameters:</h5>
+                    <ul class="ml-4 text-gray-700">
+                      <li><code class="bg-gray-100 px-1">tags: string[]</code> - Array of cache tags to invalidate</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Returns:</h5>
+                    <ul class="ml-4 text-gray-700">
+                      <li><code class="bg-gray-100 px-1">Promise&lt;void&gt;</code> - Resolves when broadcast is complete</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Example:</h5>
+                    <Code code={invalidateExampleCode} lang="typescript"  />
+                  </div>
+                </div>
+              </div>
+
+              <!-- preloadHint -->
+              <div>
+                <h4 class="text-xl font-bold text-purple-700 mb-3">
+                  <code class="bg-purple-50 px-2 py-1 rounded text-base">preloadHint(routes: string[]): Promise&lt;void&gt;</code>
+                </h4>
+                <p class="text-gray-700 mb-3">Broadcast preload hint event to all connected clients.</p>
+
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Parameters:</h5>
+                    <ul class="ml-4 text-gray-700">
+                      <li><code class="bg-gray-100 px-1">routes: string[]</code> - Array of URLs to preload</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Returns:</h5>
+                    <ul class="ml-4 text-gray-700">
+                      <li><code class="bg-gray-100 px-1">Promise&lt;void&gt;</code> - Resolves when broadcast is complete</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 class="font-semibold text-purple-600">Example:</h5>
+                    <Code code={preloadHintExampleCode} lang="typescript"  />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">
+              <code class="bg-purple-100 px-2 py-1 rounded">SSEStream Interface</code>
+            </h3>
+            <p class="text-gray-700 mb-4">The stream interface expected by CacheHub:</p>
+            <Code code={sseStreamInterfaceCode} lang="typescript"  />
+
+            <div class="mt-4 bg-blue-50 border-l-4 border-blue-500 p-4">
+              <p class="text-blue-900 font-semibold mb-2">Compatible with:</p>
+              <ul class="text-blue-800 space-y-1">
+                <li>• Hono's <code class="bg-blue-100 px-1">streamSSE</code></li>
+                <li>• Express with <code class="bg-blue-100 px-1">express-sse</code></li>
+                <li>• Custom implementations</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Guides -->
+      <section id="guides" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Guides</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Setting Up SSE Endpoint</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">With Hono</h4>
+                <Code code={honoSetupCode} lang="typescript"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">With Express</h4>
+                <Code code={expressSetupCode} lang="javascript"  />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Invalidation Strategies</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Entity-Based Invalidation</h4>
+                <Code code={entityInvalidationCode} lang="typescript"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Hierarchical Invalidation</h4>
+                <Code code={hierarchicalInvalidationCode} lang="typescript"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Time-Based Invalidation</h4>
+                <Code code={timeBasedInvalidationCode} lang="typescript"  />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Preloading Patterns</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">List-to-Detail Preloading</h4>
+                <Code code={listToDetailPreloadingCode} lang="typescript"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Navigation-Based Preloading</h4>
+                <Code code={navigationPreloadingCode} lang="typescript"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Pagination Preloading</h4>
+                <Code code={paginationPreloadingCode} lang="typescript"  />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Examples -->
+      <section id="examples" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Examples</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Complete Server Setup</h3>
+            <Code code={completeServerSetupCode} lang="typescript"  />
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Client-Side Integration</h3>
+            <Code code={clientIntegrationCode} lang="javascript"  />
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Real-World Patterns</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Batch Operations</h4>
+                <Code code={batchOperationsCode} lang="typescript"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Conditional Invalidation</h4>
+                <Code code={conditionalInvalidationCode} lang="typescript"  />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Advanced Topics -->
+      <section id="advanced" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Advanced Topics</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Custom Event Types</h3>
+            <p class="text-gray-700 mb-4">Extend the hub for custom events:</p>
+            <Code code={extendedCacheHubCode} lang="typescript"  />
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Performance Optimization</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Debounced Invalidation</h4>
+                <Code code={debouncedCacheHubCode} lang="typescript"  />
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Selective Broadcasting</h4>
+                <Code code={selectiveCacheHubCode} lang="typescript"  />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Troubleshooting -->
+      <section class="mb-16">
+        <div class="bg-amber-50 rounded-lg shadow-md p-6">
+          <h2 class="text-2xl font-bold text-amber-900 mb-4">Troubleshooting</h2>
+
+          <div class="space-y-4">
+            <div class="border-l-4 border-amber-500 pl-4">
+              <h3 class="font-bold text-amber-800 mb-1">Clients keep disconnecting and reconnecting</h3>
+              <p class="text-amber-700">Ensure you're sending periodic heartbeats. Some proxies close idle connections after 30-60 seconds.</p>
+            </div>
+
+            <div class="border-l-4 border-amber-500 pl-4">
+              <h3 class="font-bold text-amber-800 mb-1">Invalidation events aren't received</h3>
+              <p class="text-amber-700">Check CORS headers and ensure the SSE endpoint is accessible from your client domain.</p>
+            </div>
+
+            <div class="border-l-4 border-amber-500 pl-4">
+              <h3 class="font-bold text-amber-800 mb-1">Memory usage increases over time</h3>
+              <p class="text-amber-700">Verify dead connections are being removed. The hub auto-cleans on broadcast, but you should also remove on abort.</p>
+            </div>
+
+            <div class="border-l-4 border-amber-500 pl-4">
+              <h3 class="font-bold text-amber-800 mb-1">Events are received multiple times</h3>
+              <p class="text-amber-700">Ensure you're not adding the same stream multiple times. Use a Set or check for duplicates.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Next Steps -->
+      <section class="bg-gradient-to-r from-purple-100 to-orange-100 rounded-lg p-8">
+        <h2 class="text-2xl font-bold text-purple-900 mb-4">Next Steps</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <a href="/docs/core/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">← Core Library</h3>
+            <p class="text-gray-600">Learn the fundamentals</p>
+          </a>
+          <a href="/docs/react/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">React Hooks →</h3>
+            <p class="text-gray-600">Integrate with React apps</p>
+          </a>
+          <a href="https://bugs.countcachula.spooky.click/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">Live Demo →</h3>
+            <p class="text-gray-600">See it in action</p>
+          </a>
+        </div>
+      </section>
+        </div>
+
+        <!-- Table of Contents sidebar -->
+        <div class="lg:col-span-1">
+          <nav class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="font-bold text-purple-900 mb-4">On this page</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#getting-started" class="hover:text-purple-700 transition">Getting Started</a></li>
+              <li><a href="#core-concepts" class="hover:text-purple-700 transition">Core Concepts</a></li>
+              <li><a href="#api-reference" class="hover:text-purple-700 transition">API Reference</a></li>
+              <li><a href="#guides" class="hover:text-purple-700 transition">Guides</a></li>
+              <li><a href="#examples" class="hover:text-purple-700 transition">Examples</a></li>
+              <li><a href="#advanced" class="hover:text-purple-700 transition">Advanced Topics</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-purple-900 text-purple-100 py-8 px-6 mt-16">
+      <div class="max-w-6xl mx-auto text-center">
+        <div class="flex justify-center gap-6 mb-4">
+          <a href="/" class="hover:text-orange-400 transition">Home</a>
+          <a href="https://github.com/matthewp/countcachula" class="hover:text-orange-400 transition">GitHub</a>
+          <a href="https://npmjs.com/package/@countcachula/sse" class="hover:text-orange-400 transition">npm</a>
+        </div>
+        <p class="text-sm">Count Cachula SSE - BSD-3-Clause License</p>
+      </div>
+    </footer>
+  </div>
+</Layout>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+
+  code {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+  }
+</style>

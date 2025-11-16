@@ -1,0 +1,680 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Code } from 'astro-expressive-code/components';
+
+// Code snippets
+const installCode = 'npm install @countcachula/core';
+
+const quickSetupCode = `import * as CountCachula from '@countcachula/core';
+
+// Create a request
+const request = new Request('/api/users');
+
+// Fetch with cache-first strategy
+const observable = CountCachula.fetch(request);
+
+// Subscribe to updates
+observable.observe(async (response) => {
+  const data = await response.json();
+  console.log('Data received:', data);
+});`;
+
+const cachingInternalCode = `// Internally, Count Cachula:
+// 1. Creates a cache key from the request
+// 2. Checks the Cache API for existing response
+// 3. Returns cloned response if found
+// 4. Stores new responses in cache`;
+
+const fetchExampleCode = `const request = new Request('/api/data', {
+  headers: { 'Accept': 'application/json' }
+});
+const observable = CountCachula.fetch(request);`;
+
+const observeExampleCode = `const unsubscribe = observable.observe(async (response) => {
+  // Called up to twice: once with cache, once with fresh
+  const data = await response.json();
+  updateUI(data);
+});
+
+// Clean up when done
+unsubscribe();`;
+
+const simpleGetCode = `const observable = CountCachula.fetch(new Request('/api/items'));
+
+observable.observe(async (response) => {
+  const items = await response.json();
+  console.log('Items:', items);
+});`;
+
+const requestOptionsCode = `const request = new Request('/api/user', {
+  headers: {
+    'Authorization': 'Bearer token123',
+    'Accept': 'application/json'
+  }
+});
+
+const observable = CountCachula.fetch(request);`;
+
+const createMutationCode = `const createRequest = new Request('/api/items', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'New Item' })
+});
+
+CountCachula.fetch(createRequest).observe(async (response) => {
+  if (response.ok) {
+    const created = await response.json();
+    console.log('Created:', created);
+  }
+});`;
+
+const updateMutationCode = `const updateRequest = new Request('/api/items/123', {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ status: 'completed' })
+});
+
+CountCachula.fetch(updateRequest).observe(async (response) => {
+  if (response.ok) {
+    console.log('Updated successfully');
+  }
+});`;
+
+const errorHandlingCode = `observable.observe(async (response) => {
+  try {
+    if (!response.ok) {
+      throw new Error(\`HTTP error! status: \${response.status}\`);
+    }
+    const data = await response.json();
+    updateUI(data);
+  } catch (error) {
+    console.error('Failed to process response:', error);
+    showErrorMessage(error.message);
+  }
+});`;
+
+const vanillaIntegrationCode = `class DataManager {
+  constructor() {
+    this.unsubscribers = [];
+  }
+
+  loadData(url) {
+    const request = new Request(url);
+    const observable = CountCachula.fetch(request);
+
+    const unsubscribe = observable.observe(async (response) => {
+      const data = await response.json();
+      this.render(data);
+    });
+
+    this.unsubscribers.push(unsubscribe);
+  }
+
+  render(data) {
+    document.getElementById('content').innerHTML =
+      data.map(item => \`<div>\${item.name}</div>\`).join('');
+  }
+
+  cleanup() {
+    this.unsubscribers.forEach(unsub => unsub());
+  }
+}`;
+
+const webComponentsCode = `class DataList extends HTMLElement {
+  connectedCallback() {
+    const observable = CountCachula.fetch(
+      new Request(this.getAttribute('data-url'))
+    );
+
+    this.unsubscribe = observable.observe(async (response) => {
+      const data = await response.json();
+      this.innerHTML = data.map(item =>
+        \`<li>\${item.name}</li>\`
+      ).join('');
+    });
+  }
+
+  disconnectedCallback() {
+    this.unsubscribe?.();
+  }
+}
+
+customElements.define('data-list', DataList);`;
+
+const cacheKeysCode = `// These create different cache entries:
+new Request('/api/users?sort=name');
+new Request('/api/users?sort=date');
+
+// Headers also affect cache key:
+new Request('/api/data', {
+  headers: { 'Accept-Language': 'en' }
+});
+new Request('/api/data', {
+  headers: { 'Accept-Language': 'fr' }
+});`;
+
+const responseCloningCode = `observable.observe(async (response) => {
+  // First read
+  const json = await response.json();
+
+  // Would normally fail, but Count Cachula clones responses
+  observable.observe(async (response2) => {
+    const json2 = await response2.json(); // Works!
+  });
+});`;
+
+const memoryManagementCode = `class Component {
+  constructor() {
+    this.subscriptions = new Set();
+  }
+
+  fetch(url) {
+    const observable = CountCachula.fetch(new Request(url));
+
+    const unsubscribe = observable.observe(response => {
+      // Handle response
+    });
+
+    this.subscriptions.add(unsubscribe);
+  }
+
+  destroy() {
+    // Clean up all subscriptions
+    this.subscriptions.forEach(unsub => unsub());
+    this.subscriptions.clear();
+  }
+}`;
+
+const pollingCode = `function pollEndpoint(url, interval = 5000) {
+  const request = new Request(url);
+
+  const poll = () => {
+    CountCachula.fetch(request).observe(async (response) => {
+      const data = await response.json();
+      updateDashboard(data);
+    });
+  };
+
+  poll(); // Initial fetch
+  return setInterval(poll, interval);
+}
+
+// Start polling
+const intervalId = pollEndpoint('/api/stats', 10000);
+
+// Stop polling
+clearInterval(intervalId);`;
+
+const dependentRequestsCode = `// First request
+CountCachula.fetch(new Request('/api/user')).observe(async (response) => {
+  const user = await response.json();
+
+  // Second request depends on first
+  const teamsRequest = new Request(\`/api/users/\${user.id}/teams\`);
+  CountCachula.fetch(teamsRequest).observe(async (teamsResponse) => {
+    const teams = await teamsResponse.json();
+    displayUserWithTeams(user, teams);
+  });
+});`;
+
+const batchPreloadingCode = `function preloadDetails(items) {
+  items.forEach(item => {
+    // Start fetching but don't wait for response
+    const request = new Request(\`/api/items/\${item.id}\`);
+    CountCachula.fetch(request).observe(() => {
+      // Cache is now warm for this item
+    });
+  });
+}
+
+// Later, when user clicks an item, it loads instantly from cache
+function showItemDetail(itemId) {
+  const request = new Request(\`/api/items/\${itemId}\`);
+  CountCachula.fetch(request).observe(async (response) => {
+    const detail = await response.json();
+    displayDetail(detail); // Instant if preloaded!
+  });
+}`;
+
+const deduplicationCode = `// Component A
+CountCachula.fetch(new Request('/api/config')).observe(response => {
+  // Handle config
+});
+
+// Component B (simultaneously)
+CountCachula.fetch(new Request('/api/config')).observe(response => {
+  // Gets same response, no duplicate request
+});
+
+// Component C (later)
+CountCachula.fetch(new Request('/api/config')).observe(response => {
+  // Gets cached version immediately, then fresh update
+});`;
+---
+
+<Layout title="Core Library - Count Cachula">
+  <div class="min-h-screen bg-gradient-to-br from-purple-50 to-orange-50">
+    <!-- Header -->
+    <header class="bg-purple-900 text-purple-100 py-6 px-6 shadow-lg">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <a href="/" class="text-2xl font-bold hover:text-orange-400 transition">🧛 Count Cachula</a>
+          <span class="text-purple-300">/</span>
+          <span class="text-orange-400">Core Library</span>
+        </div>
+        <nav class="flex gap-6">
+          <a href="/docs/core/" class="text-orange-400">Core</a>
+          <a href="/docs/sse/" class="hover:text-orange-400 transition">SSE</a>
+          <a href="/docs/react/" class="hover:text-orange-400 transition">React</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Main content column -->
+        <div class="lg:col-span-3">
+          <!-- Getting Started -->
+      <section id="getting-started" class="mb-16">
+        <h1 class="text-4xl font-bold text-purple-900 mb-4">Core Library Documentation</h1>
+        <p class="text-xl text-gray-700 mb-8">
+          The foundation of Count Cachula - a lightweight cache-first library using the stale-while-revalidate pattern.
+        </p>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 class="text-2xl font-bold text-purple-900 mb-4">Installation</h2>
+          <div class="bg-purple-50 rounded-xl p-6 border-2 border-purple-200">
+            <Code code={installCode} lang="bash" />
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-2xl font-bold text-purple-900 mb-4">Quick Setup</h2>
+          <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+            <Code code={quickSetupCode} lang="typescript" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Concepts -->
+      <section id="core-concepts" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Core Concepts</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Stale-While-Revalidate Pattern</h3>
+            <p class="text-gray-700 mb-4">
+              The stale-while-revalidate pattern is at the heart of Count Cachula. It provides instant responses from cache while fetching fresh data in the background:
+            </p>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 mb-4">
+              <li><strong>Check Cache</strong> - Look for existing cached response</li>
+              <li><strong>Return Immediately</strong> - If found, return cached data instantly</li>
+              <li><strong>Background Update</strong> - Simultaneously fetch fresh data from network</li>
+              <li><strong>Notify Observers</strong> - When fresh data arrives, notify all subscribers</li>
+            </ol>
+            <div class="bg-purple-50 border-l-4 border-purple-500 p-4">
+              <p class="text-purple-900">
+                This pattern eliminates loading spinners for returning users while ensuring they always get fresh data.
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">CacheObservable Architecture</h3>
+            <p class="text-gray-700 mb-4">
+              CacheObservable is a custom observable implementation designed specifically for the cache-first pattern:
+            </p>
+            <ul class="space-y-3 text-gray-700">
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div>
+                  <strong>Lazy Execution</strong> - Network requests only start when the first observer subscribes
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div>
+                  <strong>Multiple Observers</strong> - Many components can observe the same request without duplicate network calls
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div>
+                  <strong>Two-Value Stream</strong> - Emits up to 2 values: cached response (if available) + fresh response
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-purple-500 mr-2">•</span>
+                <div>
+                  <strong>Automatic Cleanup</strong> - Returns unsubscribe function for proper resource management
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">How Caching Works</h3>
+            <p class="text-gray-700 mb-4">
+              Count Cachula leverages the browser's Cache API for persistent storage:
+            </p>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={cachingInternalCode} lang="typescript" />
+            </div>
+            <div class="mt-4 text-gray-700">
+              <p class="font-semibold mb-2">The Cache API provides:</p>
+              <ul class="space-y-1 ml-4">
+                <li>• Persistent storage across sessions</li>
+                <li>• Automatic request/response matching</li>
+                <li>• Proper handling of headers and methods</li>
+                <li>• Built-in cache expiration support (planned)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Request/Response Lifecycle</h3>
+
+            <div class="mb-6">
+              <h4 class="font-bold text-purple-700 mb-2">Cache Hit Flow</h4>
+              <div class="bg-green-50 rounded p-4 font-mono text-sm">
+                Request → Check Cache → Found! → Return Cached → Background Fetch → Update Cache → Notify
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-purple-700 mb-2">Cache Miss Flow</h4>
+              <div class="bg-orange-50 rounded p-4 font-mono text-sm">
+                Request → Check Cache → Not Found → Fetch from Network → Store in Cache → Notify
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Reference -->
+      <section id="api-reference" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">API Reference</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">
+              <code class="bg-purple-100 px-2 py-1 rounded">fetch(request: Request): CacheObservable&lt;Response&gt;</code>
+            </h3>
+            <p class="text-gray-700 mb-4">Main entry point for making cache-first requests.</p>
+
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-bold text-purple-700">Parameters:</h4>
+                <ul class="ml-4 text-gray-700">
+                  <li><code class="bg-gray-100 px-1">request: Request</code> - Standard Fetch API Request object</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700">Returns:</h4>
+                <ul class="ml-4 text-gray-700">
+                  <li><code class="bg-gray-100 px-1">CacheObservable&lt;Response&gt;</code> - Observable that emits Response objects</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700">Example:</h4>
+                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+                  <Code code={fetchExampleCode} lang="typescript" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">
+              <code class="bg-purple-100 px-2 py-1 rounded">CacheObservable&lt;T&gt;</code>
+            </h3>
+            <p class="text-gray-700 mb-4">Observable implementation for handling cached and fresh responses.</p>
+
+            <div class="border-t pt-4">
+              <h4 class="text-xl font-bold text-purple-700 mb-3">
+                <code class="bg-purple-50 px-2 py-1 rounded">observe(callback): unsubscribe</code>
+              </h4>
+              <p class="text-gray-700 mb-4">Subscribe to response updates.</p>
+
+              <div class="space-y-4">
+                <div>
+                  <h5 class="font-bold text-purple-600">Parameters:</h5>
+                  <ul class="ml-4 text-gray-700">
+                    <li><code class="bg-gray-100 px-1">callback: (data: T) => void</code> - Function called with each response</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h5 class="font-bold text-purple-600">Returns:</h5>
+                  <ul class="ml-4 text-gray-700">
+                    <li><code class="bg-gray-100 px-1">() => void</code> - Unsubscribe function for cleanup</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h5 class="font-bold text-purple-600">Behavior:</h5>
+                  <ul class="ml-4 text-gray-700 space-y-1">
+                    <li>• First call with cached data (if available)</li>
+                    <li>• Second call with fresh data from network</li>
+                    <li>• Responses are cloned for safe multiple reads</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h5 class="font-bold text-purple-600">Example:</h5>
+                  <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+                    <Code code={observeExampleCode} lang="typescript" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Guides -->
+      <section id="guides" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Guides</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Basic Usage Patterns</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Simple GET Request</h4>
+                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+                  <Code code={simpleGetCode} lang="typescript" />
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">With Request Options</h4>
+                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+                  <Code code={requestOptionsCode} lang="typescript" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Working with Mutations</h3>
+            <p class="text-gray-700 mb-4">POST, PUT, PATCH, and DELETE requests work seamlessly:</p>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Create Operation</h4>
+                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={createMutationCode} lang="typescript" />
+            </div>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Update Operation</h4>
+                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={updateMutationCode} lang="typescript" />
+            </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Error Handling</h3>
+            <p class="text-gray-700 mb-4">Handle errors gracefully with try-catch:</p>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={errorHandlingCode} lang="typescript" />
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Framework Integration</h3>
+
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Vanilla JavaScript</h4>
+                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+                  <Code code={vanillaIntegrationCode} lang="javascript" />
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-purple-700 mb-2">Web Components</h4>
+                <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+                  <Code code={webComponentsCode} lang="javascript" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Advanced Topics -->
+      <section id="advanced" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Advanced Topics</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Custom Cache Keys</h3>
+            <p class="text-gray-700 mb-4">Count Cachula automatically generates cache keys from requests:</p>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={cacheKeysCode} lang="typescript" />
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Response Cloning</h3>
+            <p class="text-gray-700 mb-4">Responses are automatically cloned to allow multiple reads:</p>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={responseCloningCode} lang="typescript" />
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Memory Management</h3>
+            <p class="text-gray-700 mb-4">Best practices for preventing memory leaks:</p>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={memoryManagementCode} lang="typescript" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Examples -->
+      <section id="examples" class="mb-16">
+        <h2 class="text-3xl font-bold text-purple-900 mb-8">Examples</h2>
+
+        <div class="space-y-8">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Polling with Cache</h3>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={pollingCode} lang="typescript" />
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Dependent Requests</h3>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={dependentRequestsCode} lang="typescript" />
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Batch Preloading</h3>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={batchPreloadingCode} lang="typescript" />
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-2xl font-bold text-purple-800 mb-4">Request Deduplication</h3>
+            <p class="text-gray-700 mb-4">Multiple components requesting same data only triggers ONE network request:</p>
+            <div class="bg-amber-50 rounded-xl p-6 border-2 border-amber-200">
+              <Code code={deduplicationCode} lang="typescript" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Next Steps -->
+      <section class="bg-gradient-to-r from-purple-100 to-orange-100 rounded-lg p-8">
+        <h2 class="text-2xl font-bold text-purple-900 mb-4">Next Steps</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <a href="/docs/sse/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">SSE Package →</h3>
+            <p class="text-gray-600">Learn about real-time cache invalidation</p>
+          </a>
+          <a href="/docs/react/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">React Hooks →</h3>
+            <p class="text-gray-600">Integrate with React using Suspense</p>
+          </a>
+          <a href="https://bugs.countcachula.spooky.click/" class="bg-white rounded-lg p-6 shadow hover:shadow-lg transition">
+            <h3 class="font-bold text-purple-800 mb-2">Live Demo →</h3>
+            <p class="text-gray-600">See Count Cachula in action</p>
+          </a>
+        </div>
+      </section>
+        </div>
+
+        <!-- Table of Contents sidebar -->
+        <div class="lg:col-span-1">
+          <nav class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="font-bold text-purple-900 mb-4">On this page</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#getting-started" class="hover:text-purple-700 transition">Getting Started</a></li>
+              <li><a href="#core-concepts" class="hover:text-purple-700 transition">Core Concepts</a></li>
+              <li><a href="#api-reference" class="hover:text-purple-700 transition">API Reference</a></li>
+              <li><a href="#guides" class="hover:text-purple-700 transition">Guides</a></li>
+              <li><a href="#advanced" class="hover:text-purple-700 transition">Advanced Topics</a></li>
+              <li><a href="#examples" class="hover:text-purple-700 transition">Examples</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-purple-900 text-purple-100 py-8 px-6 mt-16">
+      <div class="max-w-6xl mx-auto text-center">
+        <div class="flex justify-center gap-6 mb-4">
+          <a href="/" class="hover:text-orange-400 transition">Home</a>
+          <a href="https://github.com/matthewp/countcachula" class="hover:text-orange-400 transition">GitHub</a>
+          <a href="https://npmjs.com/package/@countcachula/core" class="hover:text-orange-400 transition">npm</a>
+        </div>
+        <p class="text-sm">Count Cachula v0.1 - BSD-3-Clause License</p>
+      </div>
+    </footer>
+  </div>
+</Layout>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+
+  code {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+  }
+</style>
